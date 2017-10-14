@@ -21,3 +21,6 @@ class Component:
 
     def get_y_coordinates(self):
         return [self.ymin, self.ymax]
+
+    def enlarge(self, amount):
+        self.set_component_coordinates(self.xmin+amount, self.ymin+amount, self.xmax+amount, self.ymax+amount)

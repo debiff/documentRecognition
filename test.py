@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from cv2 import boundingRect, countNonZero, cvtColor, drawContours, findContours, getStructuringElement, imread, morphologyEx, pyrDown, rectangle, threshold
 
-large = imread('./samples/icdar1.jpg')
+large = imread('./samples/icdar.jpg')
 # downsample and use it for processing
 rgb = pyrDown(large)
 # apply grayscale
@@ -29,3 +29,7 @@ for idx in range(0, len(hierarchy[0])):
     if r > 0.45 and rect_height > 8 and rect_width > 8:
         rgb = rectangle(rgb, (x, y+rect_height), (x+rect_width, y), (0,255,0),1)
 Image.fromarray(rgb).show()
+
+def increase_bb(hierarchy, contours):
+    for idx in range(0, len(hierarchy[0])):
+        rect = x, y, rect_width, rect_height = boundingRect(contours[idx])
