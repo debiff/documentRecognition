@@ -12,25 +12,67 @@ import random
 from itertools import product
 from physicalSegm.connectedComponent.ufarray import UFarray
 from physicalSegm.connectedComponent.component import Component
+from helper import component
 
 
 def draw_bounding_box(image, cc_list):
     draw = ImageDraw.Draw(image)
 
-    for index, component in cc_list.items():
-        draw.polygon(component.get_boundig_box(), None, 'red')
-
+    for index, comp in cc_list.items():
+        draw.polygon(comp.get_boundig_box(), None, 'red')
     return image
 
 
 def connected_components_list(coordinates_list):
-    cc_list = {}
+    cc_dict = {}
+    cc_list = []
+    for index, comp in coordinates_list.items():
+        h = abs(comp[1] - comp[3])
+        w = abs(comp[0] - comp[2])
+        if (h != 0) and (w != 0):
+            ratio = w/h
+            area = w * h
+            if (area > 20) and (area < 150000):
+                if (ratio > 0,33) and (ratio < 3):
+                    c_temp = Component(comp[0], comp[1], comp[2], comp[3])
+                    cc_dict[index] = c_temp
+                    cc_list.append(index)
+    return cc_dict, cc_list
+
+
+def compose(cc_dict, cc_list):
+
     i = 0
-    for index, component in coordinates_list.items():
-        c_temp = Component(component[0], component[1], component[2], component[3])
-        cc_list[i] = c_temp
+    j = 0
+    l_cc = len(cc_list)
+    mod = False
+    cc_new_dict = {}
+
+    for index, comp in cc_dict.items():
+        comp.enlarge(20)
+
+    while i < l_cc:
+        j = 0
+        while j < l_cc:
+            if i != j:
+                if component.is_overlapped(cc_dict[cc_list[i]], cc_dict[cc_list[j]]):
+                    temp = component.unify(cc_dict[cc_list[i]], cc_dict[cc_list[j]])
+                    cc_dict[cc_list[i]] = temp
+                    cc_list.remove(cc_list[j])
+                    l_cc = len(cc_list)
+                    mod = True
+                    break
+            j += 1
+        if mod:
+            i = 0
+            continue
         i += 1
-    return cc_list
+
+    while i < l_cc:
+        cc_new_dict[cc_list[i]] = cc_dict[cc_list[i]]
+        i += 1
+
+    return cc_new_dict, cc_list
 
 
 def run(img):
@@ -182,7 +224,11 @@ def find(img):
 
     img = Image.fromarray(img)
     (labels, output_img, cc_coordinates) = run(img)
-    cc_list = connected_components_list(cc_coordinates)
-    output_img = draw_bounding_box(output_img, cc_list)
+    cc_dict, cc_list = connected_components_list(cc_coordinates)
+    #cc_dict, cc_list = compose(cc_dict, cc_list)
+    output_img = draw_bounding_box(output_img, cc_dict)
     output_img.show()
     return labels, cc_list
+
+
+

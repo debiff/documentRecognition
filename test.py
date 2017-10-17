@@ -1,35 +1,62 @@
-from PIL import Image
 import cv2
 import numpy as np
-from cv2 import boundingRect, countNonZero, cvtColor, drawContours, findContours, getStructuringElement, imread, morphologyEx, pyrDown, rectangle, threshold
+from datetime import datetime
+from rtree import index
+import networkx as nx
+import matplotlib.pyplot as plt
 
-large = imread('./samples/icdar.jpg')
-# downsample and use it for processing
-rgb = pyrDown(large)
-# apply grayscale
-small = cvtColor(rgb, cv2.COLOR_BGR2GRAY)
-# morphological gradient
-morph_kernel = getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-grad = morphologyEx(small, cv2.MORPH_GRADIENT, morph_kernel)
-# binarize
-_, bw = threshold(src=grad, thresh=0, maxval=255, type=cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-morph_kernel = getStructuringElement(cv2.MORPH_RECT, (9, 1))
-# connect horizontally oriented regions
-connected = morphologyEx(bw, cv2.MORPH_CLOSE, morph_kernel)
-mask = np.zeros(bw.shape, np.uint8)
-# find contours
-im2, contours, hierarchy = findContours(connected, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-# filter contours
-for idx in range(0, len(hierarchy[0])):
-    rect = x, y, rect_width, rect_height = boundingRect(contours[idx])
-    # fill the contour
-    mask = drawContours(mask, contours, idx, (255, 255, 2555), cv2.FILLED)
-    # ratio of non-zero pixels in the filled region
-    r = float(countNonZero(mask)) / (rect_width * rect_height)
-    if r > 0.45 and rect_height > 8 and rect_width > 8:
-        rgb = rectangle(rgb, (x, y+rect_height), (x+rect_width, y), (0,255,0),1)
-Image.fromarray(rgb).show()
 
-def increase_bb(hierarchy, contours):
-    for idx in range(0, len(hierarchy[0])):
-        rect = x, y, rect_width, rect_height = boundingRect(contours[idx])
+def included(G, id1, id2):
+    n1 = G.nodes[id1]
+    n2 = G.nodes[id2]
+    n2_in_n1 = (n1['xmin'] <= n2['xmin'] <= n2['xmax'] <= n1['xmax'] and n1['ymin'] <= n2['ymin'] <= n2['ymax'] <= n1['ymax'])
+    n1_in_n2 = (n2['xmin'] <= n1['xmin'] <= n1['xmax'] <= n2['xmax'] and n2['ymin'] <= n1['ymin'] <= n1['ymax'] <= n2['ymax'])
+    return not(n2_in_n1 or n1_in_n2)
+
+
+timer = datetime.now()
+img = cv2.imread('./samples/example.png')
+gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+im2, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_TC89_KCOS)
+idx = index.Index()
+rect = {}
+id_r = 0
+intersection = {}
+G = nx.Graph()
+
+for cont in contours:
+    area = cv2.contourArea(cont)
+    if area > 20:
+        x, y, w, h = cv2.boundingRect(cont)
+        ratio = w/h
+        if (ratio > 0, 33) and (ratio < 3):
+            idx.insert(id_r, [x, y, x+w, y+h])
+            rect[id_r] = [x, y, x+w, y+h]
+            G.add_node(id_r)
+            G.nodes[id_r]['xmin'] = x
+            G.nodes[id_r]['ymin'] = y
+            G.nodes[id_r]['xmax'] = x + w
+            G.nodes[id_r]['ymax'] = y + h
+            id_r += 1
+
+
+for i, r in rect.items():
+    intersection[i]=list(idx.intersection(r))
+
+for node in intersection:
+    edges = list(filter(lambda x: included(G, x[0],x[1]), map(lambda x: (node, x), intersection[node])))
+    G.add_edges_from(edges)
+
+
+plt.subplot(121)
+nx.draw(G, with_labels=True, font_weight='bold')
+plt.show()
+print((datetime.now()-timer).microseconds)
+
+
+
+#cv2.imwrite('./samples/result.png', img)
+
+
+
