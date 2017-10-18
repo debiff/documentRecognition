@@ -24,7 +24,6 @@ def load_and_show(path, gray=False, show=False):
 
 
 def binarize(img, path_out=None, show=False):
-
     # img must be grayscale image
     if not is_grayscale(img):
         raise ValueError('The image should be a grayscale image')
@@ -39,9 +38,15 @@ def binarize(img, path_out=None, show=False):
 
 
 def is_grayscale(img):
-
     # if an image is grayscale has 2 channels so the dimension is < 3
     # if an image is RGB has 3 channels so the dimension is 3
     if len(img.shape) < 3:
         return True
     return False
+
+
+def load_and_gray(path):
+    # load the image
+    img = cv2.imread(path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return img, gray

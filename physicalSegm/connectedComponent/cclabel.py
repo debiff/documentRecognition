@@ -1,12 +1,5 @@
 #!/usr/bin/python
 
-#
-# Implements 8-connectivity connected component labeling
-# 
-# Algorithm obtained from "Optimizing Two-Pass Connected-Component Labeling 
-# by Kesheng Wu, Ekow Otoo, and Kenji Suzuki
-#
-
 from PIL import Image, ImageDraw
 import random
 from itertools import product
