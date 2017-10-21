@@ -1,5 +1,3 @@
-__author__ = 'Simone Biffi'
-
 from datetime import datetime
 from rtree import index
 import networkx as nx
@@ -14,13 +12,14 @@ idx = index.Index()
 G = nx.Graph()
 
 # loads the image and convert to grayscale
-img, gray = image.load_and_gray('./samples/bolletta1.jpg')
+img, sampled, gray = image.load_downsample_gray('./samples/CI.jpg')
 
 # finds component through findcontours
-contours = component.find_component(gray)
+contours = component.find_component_downsampling(gray)
+
 
 # creates the bounding box and insert in Graph, rTree and rect
-G, idx, rect = component.create_bb(G, contours, idx, 2)
+G, idx, rect = component.create_bb_downsampled(G, contours, idx, 4)
 
 # finds the intersection between all the bounding box
 intersection = component.find_intersection(rect, idx)
@@ -32,10 +31,10 @@ G = component.connect_intersected(G, intersection)
 k_edge = sorted(map(sorted, nx.k_edge_components(G, k=1)))
 
 # unify the bounding box belonging to the same chain
-component.unify_overlap(G, k_edge, img, True)
+component.unify_overlap(G, k_edge, sampled, True)
 
 # Print the graph
-#plt.subplot(121)
+#plt.plot(121)
 #nx.draw(G, with_labels=True, font_weight='bold')
 #plt.show()
 

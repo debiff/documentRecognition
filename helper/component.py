@@ -1,5 +1,8 @@
+__author__ = 'Simone Biffi'
+
 from physicalSegm.connectedComponent.component import Component
 import cv2
+import numpy as np
 
 # join two components and return a new component DEPRECATED
 def unify(comp1, comp2):
@@ -116,3 +119,55 @@ def unify_overlap(G, k_edge_list, img=None, path=False):
                               (G.nodes[c[0]]['xmax'], G.nodes[c[0]]['ymax']), (176, 27, 27), 2)
     if path and img is not None:
         cv2.imwrite('./samples/result.png', img)
+
+
+def find_component(gray):
+    ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    im2, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    return contours
+
+
+def find_component_downsampling(gray):
+
+    # morphological gradient
+    morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    grad = cv2.morphologyEx(gray, cv2.MORPH_GRADIENT, morph_kernel)
+
+    # binarize
+    _, bw = cv2.threshold(src=grad, thresh=0, maxval=255, type=cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    morph_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
+
+    # connect horizontally oriented regions
+    connected = cv2.morphologyEx(bw, cv2.MORPH_CLOSE, morph_kernel)
+    mask = np.zeros(bw.shape, np.uint8)
+
+    # find contours
+    im2, contours, hierarchy = cv2.findContours(connected, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+    return contours
+
+
+def create_bb_downsampled(G, contours_list, rtree_index, increment):
+    rect = {}
+    id_r = 0
+
+    for cont in contours_list:
+        area = cv2.contourArea(cont)
+        x, y, rect_width, rect_height = cv2.boundingRect(cont)
+        if area > 0 :
+            r = rect_width / rect_height
+            if r > 0.45 and rect_height > 8 and rect_width > 8:
+                x -= increment
+                y -= increment
+                w = rect_width + (increment * 2)
+                h = rect_height + (increment * 2)
+                rtree_index.insert(id_r, [x, y, x + w, y + h])
+                rect[id_r] = [x, y, x + w, y + h]
+                G.add_node(id_r)
+                G.nodes[id_r]['xmin'] = x
+                G.nodes[id_r]['ymin'] = y
+                G.nodes[id_r]['xmax'] = x + w
+                G.nodes[id_r]['ymax'] = y + h
+                id_r += 1
+    return G, rtree_index, rect

@@ -1,3 +1,5 @@
+__author__ = 'Simone Biffi'
+
 import cv2
 from skimage import io
 from skimage.viewer import ImageViewer
@@ -50,3 +52,12 @@ def load_and_gray(path):
     img = cv2.imread(path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img, gray
+
+
+# return the orginal image and the grayscale image of the downsampled image
+def load_downsample_gray(path):
+    # load the image
+    img = cv2.imread(path)
+    sampled = cv2.pyrDown(img)
+    gray = cv2.cvtColor(sampled, cv2.COLOR_BGR2GRAY)
+    return img, sampled, gray
