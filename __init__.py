@@ -14,7 +14,7 @@ idx = index.Index()
 G = nx.Graph()
 
 # loads the image and convert to grayscale
-img, gray = image.load_and_gray('./samples/bolletta1.jpg')
+img, gray = image.load_and_gray('./samples/icdar.jpg')
 
 # finds component through findcontours
 contours = component.find_component(gray)
