@@ -12,14 +12,14 @@ idx = index.Index()
 G = nx.Graph()
 
 # loads the image and convert to grayscale
-img, sampled, gray = image.load_downsample_gray('./samples/CI.jpg')
+img, sampled, gray = image.load_downsample_gray('./samples/icdar.jpg')
 
 # finds component through findcontours
 contours = component.find_component_downsampling(gray)
 
 
 # creates the bounding box and insert in Graph, rTree and rect
-G, idx, rect = component.create_bb_downsampled(G, contours, idx, 4)
+G, idx, rect = component.create_bb_downsampled(G, contours, idx, 0)
 
 # finds the intersection between all the bounding box
 intersection = component.find_intersection(rect, idx)
