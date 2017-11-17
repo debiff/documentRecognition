@@ -3,8 +3,8 @@ __author__ = 'Simone Biffi'
 
 class Component:
 
-    def __init__(self, id, xmin, ymin, xmax, ymax, area=None, contour=None):
-        self.id = id
+    def __init__(self, id_component, xmin, ymin, xmax, ymax, area=None, contour=None):
+        self._id = id_component
         self._xmin = xmin
         self._ymin = ymin
         self._xmax = xmax
@@ -22,6 +22,10 @@ class Component:
     """
         GETTER AND SETTER
     """
+    @property
+    def id(self):
+        return self._id
+
     @property
     def xmin(self):
         return self._xmin
