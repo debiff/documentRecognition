@@ -1,5 +1,6 @@
 __author__ = 'Simone Biffi'
 
+import numpy as np
 
 class ComponentCollector:
 
@@ -7,6 +8,7 @@ class ComponentCollector:
         self._components = []
         self._cached_bounding_boxes = None
         self._cached_dict = {}
+        self._cached_matrix = None
 
     """
         GETTER AND SETTER
@@ -17,15 +19,24 @@ class ComponentCollector:
     """
 
     @property
+    def as_list(self):
+        return self._components
+
+    @property
     def as_dict(self):
         if self._cached_dict:
             return self._cached_dict
 
-        self._cached_dict = {v.id: v for v in self._components  }
-        # for val in self._components:
-        #     self._cached_dict[val.id] = val
-        #
+        self._cached_dict = {v.id: v for v in self._components}
         return self._cached_dict
+
+    @property
+    def as_matrix(self):
+        if self._cached_matrix is not None:
+            return self._cached_matrix
+
+        self._cached_matrix = np.array([[v.xmin, v.ymin, v.xmax, v.ymax] for v in self._components])
+        return self._cached_matrix
 
     """
         METHOD
@@ -42,5 +53,6 @@ class ComponentCollector:
     def _clear_cache(self):
         self._cached_bounding_boxes = None
         self._cached_dict = {}
+        self._cached_matrix = None
 
 

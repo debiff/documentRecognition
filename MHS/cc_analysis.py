@@ -1,24 +1,33 @@
 import numpy as np
 import cv2
-from MHS.classes import component
+from MHS.classes import component, componentCollector
 
 
 __author__ = 'Simone Biffi'
 
 
-def cc_area(contour):
-    return cv2.contourArea(contour)
-
-
 # cc_array -> numpy.array contente tutti i cc del documento nella forma [xmin, ymin, xmax, ymax]
 # cc -> singolo cc, oggetto classes/component
-def cc_same_column(cc_array, cc):
-    return np.where((np.maximum(cc_array[:, 0], cc.xmin) - np.minimum(cc_array[:, 2], cc.xmax)) < 0)[0]\
+def cc_same_column_new(cc_array, comp):
+    return np.where((np.maximum(cc_array[:, 0], comp.xmin) - np.minimum(cc_array[:, 2], comp.xmax)) < 0)[0]\
         .tolist()
 
 
 # cc_array -> numpy.array contente tutti i cc del documento nella forma [xmin, ymin, xmax, ymax]
 # cc -> singolo cc, oggetto classes/component
+def cc_same_row_new(cc_array, comp):
+    return np.where((np.maximum(cc_array[:, 1], comp.ymin) - np.minimum(cc_array[:, 3], comp.ymax)) < 0)[0] \
+        .tolist()
+
+
+def neighbors_new(comp):
+    right = np.where(((comp.same_row_as_matrix()[:, 0] - comp.xmax) > 0))[0].tolist()
+    left = np.where(((comp.xmin - comp.same_row_as_matrix()[:, 2]) > 0))[0].tolist()
+    nnr = right[np.argmin(comp.same_row_as_matrix()[right][:, 0])] if len(right) > 0 else -1
+    nnl = left[np.argmax(comp.same_row_as_matrix()[left][:, 2])] if len(left) > 0 else -1
+    return nnr, nnl
+
+
 def cc_same_row(cc_array, cc):
     min_right_idx = -1
     min_left_idx = -1
@@ -41,8 +50,47 @@ def cc_same_row(cc_array, cc):
     return near, nnr, nnl
 
 
-def density(a_cc, a_bb):
+def density_new(a_cc, a_bb):
     return a_cc/a_bb
+
+
+def hw_ratio_new(w, h):
+    return min(w, h) / max(w, h)
+
+
+def create_component_new(contours_list, t_area, t_density, t_ratio):
+    component_collector = componentCollector.ComponentCollector()
+
+    for i, cont in enumerate(contours_list):
+
+        area = cv2.contourArea(cont)
+        x, y, w, h = cv2.boundingRect(cont)
+
+        if area > t_area and density(area, w * h) > t_density and hw_ratio(w, h) > t_ratio:
+            component_collector.add_component(
+                component.Component(i, x, y, x + w, y + h, area, cont))
+
+    for comp in component_collector.as_list:
+        same_column = cc_same_column(component_collector.as_matrix, comp)
+        comp.same_column = [component_collector.as_list[c] for c in same_column]
+
+        same_row = cc_same_row_new(component_collector.as_matrix, comp)
+        comp.same_row = [component_collector.as_list[c] for c in same_row]
+
+        inner_components = inner_bb_new(component_collector.as_matrix, comp)
+        comp.inner_components = [component_collector.as_list[c] for c in inner_components]
+
+        nnr, nnl = neighbors_new(comp)
+
+        comp.nnr = comp.same_row[nnr] if nnr > -1 else -1
+        comp.nr = comp.same_row[nnr] if nnr > -1 else -1
+        if nnr > -1: comp.same_row[nnr].nl = comp
+
+        comp.nnl = comp.same_row[nnl] if nnl > -1 else -1
+        comp.nl = comp.same_row[nnl] if nnl > -1 else -1
+        if nnl > -1: comp.same_row[nnl].nr = comp
+
+    return component_collector
 
 
 def create_component(contours_list, t_area, t_density):
@@ -72,14 +120,14 @@ def create_component(contours_list, t_area, t_density):
             cc[0].nl = nnl
             cc[0].nnl = nnl
             rect[nnl][0].nr = index
-        cc[0].inner_bb = len(inner_bb(cc_arr, cc[0]))
+        cc[0].inner_components = len(inner_bb(cc_arr, cc[0]))
     return rect, cc_arr
 
 
-def inner_bb(cc_array, cc):
+def inner_bb_new(cc_array, comp):
     list_inner = np.where(
-        ((cc.xmin < cc_array[:, 0]) & (cc_array[:, 2] < cc.xmax) & (cc_array[:, 0] < cc_array[:, 2])) &
-        ((cc.ymin < cc_array[:, 1]) & (cc_array[:, 3] < cc.ymax) & (cc_array[:, 1] < cc_array[:, 3])))
+        ((comp.xmin < cc_array[:, 0]) & (cc_array[:, 2] < comp.xmax) & (cc_array[:, 0] < cc_array[:, 2])) &
+        ((comp.ymin < cc_array[:, 1]) & (cc_array[:, 3] < comp.ymax) & (cc_array[:, 1] < cc_array[:, 3])))
     return list_inner[0]
 
 

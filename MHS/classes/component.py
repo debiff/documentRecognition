@@ -1,5 +1,6 @@
 __author__ = 'Simone Biffi'
 
+import numpy as np
 
 class Component:
 
@@ -10,7 +11,7 @@ class Component:
         self._xmax = xmax
         self._ymax = ymax
         self._contour = contour
-        self._inner_bb = None
+        self._inner_components = None
         self._same_column = []
         self._same_row = []
         self._nr = []
@@ -18,6 +19,12 @@ class Component:
         self._nnr = -1
         self._nnl = -1
         self._area = area
+
+        """
+            CACHED
+        """
+        self._cached_same_row = []
+        self._cached_same_column = []
 
     """
         GETTER AND SETTER
@@ -51,11 +58,11 @@ class Component:
         return self._contour
 
     @property
-    def inner_bb(self):
+    def inner_components(self):
         return self._inner_bb
 
-    @inner_bb.setter
-    def inner_bb(self, n):
+    @inner_components.setter
+    def inner_components(self, n):
         self._inner_bb = n
 
     @property
@@ -142,4 +149,18 @@ class Component:
 
     @property
     def hw_ratio(self):
-        return min(self.bb_width, self.bb_height)/ max(self.bb_width, self.bb_height)
+        return min(self.bb_width, self.bb_height) / max(self.bb_width, self.bb_height)
+
+    @property
+    def density(self):
+        return self.area / (self.bb_width * self.bb_height)
+
+    """
+        METHOD
+    """
+
+    def same_row_as_matrix(self):
+        if type(self._cached_same_row) != list:
+            return self._cached_same_row
+        self._cached_same_row = np.array([[v.xmin, v.ymin, v.xmax, v.ymax] for v in self._same_row])
+        return self._cached_same_row

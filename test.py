@@ -18,7 +18,7 @@ contours, hierarchy = component.find_component(binary)
 
 print((datetime.now()-timer))
 rect, cc_arr = cc_analysis.create_component(contours, 6, 0.15)
-
+print((datetime.now()-timer))
 
 #Textmask = np.ones(img.shape[:2], dtype="uint8") * 255
 NonTextmask = np.ones(img.shape[:2], dtype="uint8") * 255
@@ -26,7 +26,7 @@ text_element, non_text_element = heuristic_filter.heuristic_f(rect, 4)
 cc_arr_text = cc_arr[list(text_element.keys())]
 
 for index, cc in text_element.items():
-    if cc[0].inner_bb > 1:
+    if cc[0].inner_components > 1:
         cv2.drawContours(NonTextmask, [cc[0].contour], -1, 0, cv2.FILLED)
     else:
         cv2.drawContours(NonTextmask, [cc[0].contour], -1, 0, cv2.FILLED)
@@ -146,7 +146,7 @@ while splitted:
                 tmp_mask = np.ones(region[0].shape[:2], dtype="uint8") * 255
                 for key, value in included.items():
                     contour = value[0].contour
-                    if value[0].inner_bb > 1:
+                    if value[0].inner_components > 1:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
@@ -155,7 +155,7 @@ while splitted:
                     contour = value[0].contour
                     contour[:, 0][:, 0] = contour[:, 0][:, 0] - region[1][0][0]
                     contour[:, 0][:, 1] = contour[:, 0][:, 1] - region[1][0][1]
-                    if value[0].inner_bb > 1:
+                    if value[0].inner_components > 1:
                         cv2.drawContours(tmp_mask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(tmp_mask, [contour], -1, 0, cv2.FILLED)
@@ -164,7 +164,7 @@ while splitted:
                 final_region.append((region[0], region[1], list(included.keys())))
                 for key, value in included.items():
                     contour = value[0].contour
-                    if value[0].inner_bb > 1:
+                    if value[0].inner_components > 1:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
