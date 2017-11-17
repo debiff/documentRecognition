@@ -6,7 +6,7 @@ def heuristic_f(cc_dict, t_inside):
     text_element = {}
     non_text_element = {}
     for index, cc in cc_dict.items():
-        if (cc[0].get_inner_bb() > t_inside):
+        if (cc[0].inner_bb > t_inside):
             non_text_element[index] = cc
         else:
             text_element[index] = cc

@@ -13,7 +13,7 @@ def cc_area(contour):
 # cc_array -> numpy.array contente tutti i cc del documento nella forma [xmin, ymin, xmax, ymax]
 # cc -> singolo cc, oggetto classes/component
 def cc_same_column(cc_array, cc):
-    return np.where((np.maximum(cc_array[:, 0], cc.get_xmin()) - np.minimum(cc_array[:, 2], cc.get_xmax())) < 0)[0]\
+    return np.where((np.maximum(cc_array[:, 0], cc.xmin) - np.minimum(cc_array[:, 2], cc.xmax)) < 0)[0]\
         .tolist()
 
 
@@ -25,10 +25,10 @@ def cc_same_row(cc_array, cc):
     nnl = -1
     nnr = -1
 
-    near = np.where((np.maximum(cc_array[:, 1], cc.get_ymin()) - np.minimum(cc_array[:, 3], cc.get_ymax())) < 0)[0]\
+    near = np.where((np.maximum(cc_array[:, 1], cc.ymin) - np.minimum(cc_array[:, 3], cc.ymax)) < 0)[0]\
         .tolist()
-    right = np.where(((cc_array[:, 0] - cc.get_xmax()) > 0))[0].tolist()
-    left = np.where(((cc.get_xmin() - cc_array[:, 2]) > 0))[0].tolist()
+    right = np.where(((cc_array[:, 0] - cc.xmax) > 0))[0].tolist()
+    left = np.where(((cc.xmin - cc_array[:, 2]) > 0))[0].tolist()
     near_right = list(set(near) & set(right))
     near_left = list(set(near) & set(left))
     if len(near_right) > 0:
@@ -52,19 +52,18 @@ def create_component(contours_list, t_area, t_density):
     for cont in contours_list:
         area = cv2.contourArea(cont)
         x, y, w, h = cv2.boundingRect(cont)
-        cc = component.Component(id_r, x, y, x + w, y + h, cont)
-        if area > t_area and density(area, w * h) > t_density and cc.get_hw_ratio() > 0.06:
+        cc = component.Component(id_r, x, y, x + w, y + h, area, cont)
+        if area > t_area and density(area, w * h) > t_density and cc.hw_ratio > 0.06:
             #ratio = w / h
-            cc.set_area(area)
             rect[id_r] = [cc]
             list_arr.append([x, y, x + w, y + h])
             id_r += 1
     cc_arr = np.array(list_arr)
 
     for index, cc in rect.items():
-        cc[0].set_same_column(cc_same_column(cc_arr, cc[0]))
+        cc[0].same_column = cc_same_column(cc_arr, cc[0])
         near, nnr, nnl = cc_same_row(cc_arr, cc[0])
-        cc[0].set_same_row(near)
+        cc[0].same_row = near
         if nnr > -1:
             cc[0].nr = nnr
             cc[0].nnr = nnr
@@ -73,14 +72,14 @@ def create_component(contours_list, t_area, t_density):
             cc[0].nl = nnl
             cc[0].nnl = nnl
             rect[nnl][0].nr = index
-        cc[0].set_inner_bb(len(inner_bb(cc_arr, cc[0])))
+        cc[0].inner_bb = len(inner_bb(cc_arr, cc[0]))
     return rect, cc_arr
 
 
 def inner_bb(cc_array, cc):
     list_inner = np.where(
-        ((cc.get_xmin() < cc_array[:, 0]) & (cc_array[:, 2] < cc.get_xmax()) & (cc_array[:, 0] < cc_array[:, 2])) &
-        ((cc.get_ymin() < cc_array[:, 1]) & (cc_array[:, 3] < cc.get_ymax()) & (cc_array[:, 1] < cc_array[:, 3])))
+        ((cc.xmin < cc_array[:, 0]) & (cc_array[:, 2] < cc.xmax) & (cc_array[:, 0] < cc_array[:, 2])) &
+        ((cc.ymin < cc_array[:, 1]) & (cc_array[:, 3] < cc.ymax) & (cc_array[:, 1] < cc_array[:, 3])))
     return list_inner[0]
 
 

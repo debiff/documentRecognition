@@ -26,10 +26,10 @@ text_element, non_text_element = heuristic_filter.heuristic_f(rect, 4)
 cc_arr_text = cc_arr[list(text_element.keys())]
 
 for index, cc in text_element.items():
-    if cc[0].get_inner_bb() > 1:
-        cv2.drawContours(NonTextmask, [cc[0].get_contour()], -1, 0, cv2.FILLED)
+    if cc[0].inner_bb > 1:
+        cv2.drawContours(NonTextmask, [cc[0].contour], -1, 0, cv2.FILLED)
     else:
-        cv2.drawContours(NonTextmask, [cc[0].get_contour()], -1, 0, cv2.FILLED)
+        cv2.drawContours(NonTextmask, [cc[0].contour], -1, 0, cv2.FILLED)
 
 kernel = np.ones((5, 5), np.uint8)
 dilation = cv2.erode(NonTextmask, kernel, iterations=1)
@@ -61,12 +61,12 @@ while splitted:
             ws_list = []
             candidate_list = []
             for key, value in included.items():
-                areatot_list.append((key, value[0].get_area()))
+                areatot_list.append((key, value[0].area))
                 wtot_list.append((key, value[0].bb_width))
                 htot_list.append((key, value[0].bb_height))
-                r_nn_distance = rect[value[0].nnr][0].get_xmin() - value[0].get_xmax() \
+                r_nn_distance = rect[value[0].nnr][0].xmin - value[0].xmax \
                     if value[0].nnr > -1 else 0
-                l_nn_distance = value[0].get_xmin() - rect[value[0].nnl][0].get_xmax() \
+                l_nn_distance = value[0].xmin - rect[value[0].nnl][0].xmax \
                     if value[0].nnl > -1 else 0
                 ws_list.append((key, r_nn_distance, l_nn_distance))
 
@@ -145,17 +145,17 @@ while splitted:
             if add:
                 tmp_mask = np.ones(region[0].shape[:2], dtype="uint8") * 255
                 for key, value in included.items():
-                    contour = value[0].get_contour()
-                    if value[0].get_inner_bb() > 1:
+                    contour = value[0].contour
+                    if value[0].inner_bb > 1:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
 
                 for key, value in included.items():
-                    contour = value[0].get_contour()
+                    contour = value[0].contour
                     contour[:, 0][:, 0] = contour[:, 0][:, 0] - region[1][0][0]
                     contour[:, 0][:, 1] = contour[:, 0][:, 1] - region[1][0][1]
-                    if value[0].get_inner_bb() > 1:
+                    if value[0].inner_bb > 1:
                         cv2.drawContours(tmp_mask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(tmp_mask, [contour], -1, 0, cv2.FILLED)
@@ -163,8 +163,8 @@ while splitted:
             else:
                 final_region.append((region[0], region[1], list(included.keys())))
                 for key, value in included.items():
-                    contour = value[0].get_contour()
-                    if value[0].get_inner_bb() > 1:
+                    contour = value[0].contour
+                    if value[0].inner_bb > 1:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
                     else:
                         cv2.drawContours(textMask, [contour], -1, 0, cv2.FILLED)
