@@ -1,7 +1,7 @@
 __author__ = 'Simone Biffi'
 
 
-class Component():
+class Component:
 
     def __init__(self, id, xmin, ymin, xmax, ymax, area=None, contour=None):
         self.id = id
