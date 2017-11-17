@@ -6,7 +6,7 @@ from MHS import hre
 from datetime import datetime
 
 
-def vertical_homogeneity(region):
+def vertical_homogeneity(region, xmin, ymin):
     region = np.copy(region)
     #region[region == 0] = 1
     #region[region == 255] = 0
@@ -19,8 +19,11 @@ def vertical_homogeneity(region):
     medw = math.ceil(median(w)) if (w.size > 0) else 0
     varb = hre.variance(b) if (b.size > 0) else 0
     varw = hre.variance(w) if (w.size > 0) else 0
-    splitted_region = []
+    splitted_bb = []
     idx_split = []
+    xmax = xmin + region.shape[1]
+    ymax = ymin + region.shape[0]
+    homogeneous = False
     if varb > 1.3 and varb > varw:
         maxb = np.amax(b)
         if maxb > medb:
@@ -36,21 +39,27 @@ def vertical_homogeneity(region):
                 if imaxb == 0 and countb == 0 and i == 0:
                     idx_split_count += rle[i + 1] + math.floor(rle[i + 3] / 2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmin + idx_split_count, ymax))
+                    splitted_bb.append((xmin + idx_split_count, ymin, xmax, ymax))
                 elif countb + 1 >= imaxb and rle[i] == 0:
                     idx_split_count += math.floor((rle[i + 1]) / 2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmin + idx_split_count, ymax))
+
                     if (i + 5) < rle.size:
+                        splitted_bb.append((xmin + idx_split_count + 1, ymin, xmin + idx_split_count + math.ceil((rle[i + 1]) / 2) + rle[i + 3]
+                                            + math.floor((rle[i + 5]) / 2), ymax))
                         idx_split_count += math.ceil((rle[i + 1]) / 2) + rle[i + 3] + math.floor((rle[i + 5]) / 2)
                         idx_split.append(idx_split_count)
-                    if (i + 3) < rle.size:
-                        idx_split_count += rle[i + 1] + rle[i + 3]
-                        idx_split.append(idx_split_count)
+
+                    splitted_bb.append((xmin + idx_split_count, ymin, xmax, ymax))
                     countb += 1
                 else:
                     idx_split_count += rle[i + 1]
                 i += 2
-
-    if varw > 1.3 and varw > varb:
+        else:
+            homogeneous = True
+    elif varw > 1.3 and varw > varb:
         maxw = np.amax(w)
         if maxw > medw:
             imaxw = np.argmax(w)
@@ -63,15 +72,23 @@ def vertical_homogeneity(region):
                 if countw >= imaxw:
                     idx_split_count += math.floor((rle[i + 1]) / 2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmin + idx_split_count, ymax))
+                    splitted_bb.append((xmin + idx_split_count + 1, ymin, xmax, ymax))
                 else:
                     idx_split_count += rle[i + 1]
                 i += 2
+        else:
+            homogeneous = True
+    else: homogeneous = True
+
+    if homogeneous:
+        splitted_bb.append((xmin, ymin, xmax, ymax))
     splitted_region = np.array_split(region, idx_split, axis=1)
 
-    return varb < 1.3 and varw < 1.3, splitted_region
+    return homogeneous, splitted_region, splitted_bb
 
 
-def horizontal_homogeneity(region):
+def horizontal_homogeneity(region, xmin, ymin):
     region = np.copy(region)
     region[region == 0] = 1
     region[region == 255] = 0
@@ -84,8 +101,11 @@ def horizontal_homogeneity(region):
     medw = math.ceil(median(w)) if (w.size > 0) else 0
     varb = hre.variance(b) if (b.size > 0) else 0
     varw = hre.variance(w) if (w.size > 0) else 0
-    splitted_region =[]
+    splitted_bb = []
     idx_split = []
+    xmax = xmin + region.shape[1]
+    ymax = ymin + region.shape[0]
+    homogeneous = False
     if varb > 1.3 and varb > varw:
         maxb = np.amax(b)
         if maxb > medb:
@@ -100,17 +120,25 @@ def horizontal_homogeneity(region):
                 if imaxb == 0 and countb == 0 and i == 0:
                     idx_split_count += rle[i + 1] + math.floor(rle[i + 3] / 2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmax, ymin + idx_split_count))
+                    splitted_bb.append((xmin, ymin + idx_split_count + 1, xmax, ymax))
                 elif countb + 1 >= imaxb and rle[i] == 0:
                     idx_split_count += math.floor((rle[i+1])/2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmax, ymin + idx_split_count))
                     if(i+5) < rle.size:
+                        splitted_bb.append((xmin, ymin + idx_split_count + 1, xmax, ymin + idx_split_count + math.ceil((rle[i+1])/2) + rle[i + 3]
+                                            + math.floor(rle[i + 5] / 2)))
                         idx_split_count += math.ceil((rle[i+1])/2) + rle[i + 3] + math.floor(rle[i + 5] / 2)
                         idx_split.append(idx_split_count)
+
+                    splitted_bb.append((xmin, ymin + idx_split_count + 1, xmax, ymax))
                 else:
                     idx_split_count += rle[i + 1]
                 i += 2
-
-    if varw > 1.3 and varw > varb:
+        else:
+            homogeneous = True
+    elif varw > 1.3 and varw > varb:
         maxw = np.amax(w)
         if maxw > medw:
             imaxw = np.argmax(w)
@@ -123,67 +151,89 @@ def horizontal_homogeneity(region):
                 if countw >= imaxw:
                     idx_split_count += math.floor((rle[i + 1]) / 2)
                     idx_split.append(idx_split_count)
+                    splitted_bb.append((xmin, ymin, xmax, ymax + idx_split_count))
+                    splitted_bb.append((xmin, ymin + idx_split_count + 1, xmax, ymax))
                 else:
                     idx_split_count += rle[i + 1]
                 i += 2
+        else:
+            homogeneous = True
+    else:
+        homogeneous = True
+
+    if homogeneous:
+        splitted_bb.append((xmin, ymin, xmax, ymax))
     splitted_region = np.array_split(region, idx_split, axis=0)
 
-    return varb < 1.3 and varw < 1.3, splitted_region
+    return homogeneous, splitted_region, splitted_bb
 
 
-def split_vertical(arr, lst=None):
+def split_vertical(arr, xmin, ymin, lst=None, lst_bb =None):
 
-    if lst == None:
+    if lst == None and lst_bb == None:
         lst = []
-    splitted = vertical_homogeneity(arr)
+        lst_bb = []
+    splitted = vertical_homogeneity(arr, xmin, ymin)
     if splitted[0]:
         arr[arr == 0] = 255
         arr[arr == 1] = 0
         #cv2.imwrite('./split/' + str(len(lst)) + '.png', arr)
-        return lst.append(arr)
+        lst.append(arr)
+        lst_bb.append(splitted[2])
+        return lst, lst_bb
     else:
         for index, item in enumerate(splitted[1]):
-            if item.shape[1] > 0 and item.shape[1] > 0 and item[item == 1].size > 0:
-                split_vertical(item, lst)
-    return lst
+            if type(item) is np.ndarray:
+                if item.shape[1] > 0 and item.shape[1] > 0 and item[item == 1].size > 0:
+                    split_vertical(item, splitted[2][index][0], splitted[2][index][1], lst, lst_bb)
+    return lst, lst_bb
 
 
-def split_horizontal(arr, lst=None):
+def split_horizontal(arr, xmin, ymin, lst=None, lst_bb =None):
 
     if lst == None:
         lst = []
-    splitted = horizontal_homogeneity(arr)
+        lst_bb = []
+    splitted = horizontal_homogeneity(arr, xmin, ymin)
     if splitted[0]:
         arr[arr == 0] = 255
         arr[arr == 1] = 0
+        lst.append(arr)
+        lst_bb.append(splitted[2])
         #cv2.imwrite('./split/' + str(len(lst)) + '.png', arr)
-        return lst.append(arr)
+        return lst, lst_bb
     else:
         for index, item in enumerate(splitted[1]):
             if item.shape[1] > 0 and item.shape[1] > 0 and item[item == 1].size > 0:
-                split_horizontal(item, lst)
-    return lst
+                split_horizontal(item, splitted[2][index][0], splitted[2][index][1], lst, lst_bb)
+    return lst, lst_bb
 
 
 def run(binary, save=False, path=None):
     binary[binary == 0] = 1
     binary[binary == 255] = 0
-    homogeneous_v = split_vertical(binary)
+
+    homogeneous_v, bb_v = split_vertical(binary, 0, 0)
     splitted_region = []
+    bb_region = []
     homogeneous_region = []
 
     for i, t in enumerate(homogeneous_v):
-        splitted_region.append(split_horizontal(t))
+        homogeneous_h, bb_h = split_horizontal(t, bb_v[i][0][0], bb_v[i][0][1])
+        splitted_region.append(homogeneous_h)
+        bb_region.append(bb_h)
 
     for i, t in enumerate(splitted_region):
         if t is None:
-            homogeneous_region.append(homogeneous_v[i])
+            tmp = [homogeneous_v[i], bb_v[i]]
+            homogeneous_region.append(tmp)
             if save:
                 cv2.imwrite(path + str(i) + '.png', homogeneous_v[i])
         else:
             for j, tt in enumerate(t):
-                homogeneous_region.append(tt)
+                tmp = [tt, bb_region[i][j]]
+                homogeneous_region.append(tmp)
                 if save:
                     cv2.imwrite(path + str(i) + '_' + str(j) + '.png', tt)
 
-    return
+    return homogeneous_region
