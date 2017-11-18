@@ -1,11 +1,9 @@
 __author__ = 'Simone Biffi'
 
 from datetime import datetime
-import numpy as np
 import cv2
 from helper import component, image
 from MHS import cc_analysis, heuristic_filter, recursive_filter
-from MHS.classes import component as comp
 
 timer = datetime.now()
 

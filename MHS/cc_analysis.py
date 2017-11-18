@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
-from MHS.classes import component, componentCollector
+from MHS.classes.component import Component
+from MHS.classes.component_collector import ComponentCollector
 
 
 __author__ = 'Simone Biffi'
@@ -21,10 +22,10 @@ def cc_same_row_new(cc_array, comp):
 
 
 def neighbors_new(comp):
-    right = np.where(((comp.same_row_as_matrix()[:, 0] - comp.xmax) > 0))[0].tolist()
-    left = np.where(((comp.xmin - comp.same_row_as_matrix()[:, 2]) > 0))[0].tolist()
-    nnr = right[np.argmin(comp.same_row_as_matrix()[right][:, 0])] if len(right) > 0 else -1
-    nnl = left[np.argmax(comp.same_row_as_matrix()[left][:, 2])] if len(left) > 0 else -1
+    right = np.where(((comp.same_row.as_matrix()[:, 0] - comp.xmax) > 0))[0].tolist()
+    left = np.where(((comp.xmin - comp.same_row.as_matrix()[:, 2]) > 0))[0].tolist()
+    nnr = comp.same_row.as_list()[right[np.argmin(comp.same_row.as_matrix()[right][:, 0])]] if len(right) > 0 else -1
+    nnl = comp.same_row.as_list()[left[np.argmax(comp.same_row.as_matrix()[left][:, 2])]] if len(left) > 0 else -1
     return nnr, nnl
 
 
@@ -59,36 +60,38 @@ def hw_ratio_new(w, h):
 
 
 def create_component_new(contours_list, t_area, t_density, t_ratio):
-    component_collector = componentCollector.ComponentCollector()
+    component_collector = ComponentCollector()
 
     for i, cont in enumerate(contours_list):
 
         area = cv2.contourArea(cont)
         x, y, w, h = cv2.boundingRect(cont)
 
-        if area > t_area and density(area, w * h) > t_density and hw_ratio(w, h) > t_ratio:
+        if area > t_area and density_new(area, w * h) > t_density and hw_ratio_new(w, h) > t_ratio:
             component_collector.add_component(
-                component.Component(i, x, y, x + w, y + h, area, cont))
+                Component(i, x, y, x + w, y + h, 'text', area, cont))
 
-    for comp in component_collector.as_list:
-        same_column = cc_same_column(component_collector.as_matrix, comp)
-        comp.same_column = [component_collector.as_list[c] for c in same_column]
+    for comp in component_collector.as_list():
+        same_column = cc_same_column_new(component_collector.as_matrix(), comp)
+        comp.same_column = [component_collector.as_list()[c] for c in same_column]
 
-        same_row = cc_same_row_new(component_collector.as_matrix, comp)
-        comp.same_row = [component_collector.as_list[c] for c in same_row]
+        same_row = cc_same_row_new(component_collector.as_matrix(), comp)
+        comp.same_row = [component_collector.as_list()[c] for c in same_row]
 
-        inner_components = inner_bb_new(component_collector.as_matrix, comp)
-        comp.inner_components = [component_collector.as_list[c] for c in inner_components]
+        inner_components = inner_bb_new(component_collector.as_matrix(), comp)
+        comp.inner_components = [component_collector.as_list()[c] for c in inner_components]
 
         nnr, nnl = neighbors_new(comp)
 
-        comp.nnr = comp.same_row[nnr] if nnr > -1 else -1
-        comp.nr = comp.same_row[nnr] if nnr > -1 else -1
-        if nnr > -1: comp.same_row[nnr].nl = comp
+        if nnr != -1:
+            comp.nnr = nnr
+            comp.nr = nnr
+            nnr.nl = comp
 
-        comp.nnl = comp.same_row[nnl] if nnl > -1 else -1
-        comp.nl = comp.same_row[nnl] if nnl > -1 else -1
-        if nnl > -1: comp.same_row[nnl].nr = comp
+        if nnl != -1:
+            comp.nnl = nnl
+            comp.nl = nnl
+            nnl.nr = comp
 
     return component_collector
 

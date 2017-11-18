@@ -1,24 +1,26 @@
 __author__ = 'Simone Biffi'
 
 import numpy as np
+from MHS.classes.component_collector import ComponentCollector
 
 class Component:
 
-    def __init__(self, id_component, xmin, ymin, xmax, ymax, area=None, contour=None):
+    def __init__(self, id_component, xmin, ymin, xmax, ymax, type, area=None, contour=None):
         self._id = id_component
         self._xmin = xmin
         self._ymin = ymin
         self._xmax = xmax
         self._ymax = ymax
         self._contour = contour
-        self._inner_components = None
-        self._same_column = []
-        self._same_row = []
-        self._nr = []
-        self._nl = []
+        self._inner_components = ComponentCollector()
+        self._same_column = ComponentCollector()
+        self._same_row = ComponentCollector()
+        self._nr = ComponentCollector()
+        self._nl = ComponentCollector()
         self._nnr = -1
         self._nnl = -1
         self._area = area
+        self._type = type
 
         """
             CACHED
@@ -62,8 +64,8 @@ class Component:
         return self._inner_bb
 
     @inner_components.setter
-    def inner_components(self, n):
-        self._inner_bb = n
+    def inner_components(self, cc_list):
+        self._inner_components.add_components(cc_list)
 
     @property
     def same_column(self):
@@ -71,7 +73,7 @@ class Component:
 
     @same_column.setter
     def same_column(self, cc_list):
-        self._same_column = cc_list
+        self._same_column.add_components(cc_list)
 
     @property
     def same_row(self):
@@ -79,7 +81,7 @@ class Component:
 
     @same_row.setter
     def same_row(self, cc_list):
-        self._same_row = cc_list
+        self._same_row.add_components(cc_list)
 
     @property
     def nr(self):
@@ -87,10 +89,10 @@ class Component:
         return self._nr
 
     @nr.setter
-    def nr(self, obj):
+    def nr(self, comp):
         """Append a component object to the list of nearest right neighbours"""
-        if obj not in self._nr:
-            self._nr.append(obj)
+        if comp not in self._nr.as_list():
+            self._nr.add_component(comp)
 
     @property
     def nl(self):
@@ -98,10 +100,10 @@ class Component:
         return self._nl
 
     @nl.setter
-    def nl(self, obj):
+    def nl(self, comp):
         """Append a component object to the list of nearest left neighbours"""
-        if obj not in self._nl:
-            self._nl.append(obj)
+        if comp not in self._nl.as_list():
+            self._nl.add_component(comp)
 
     @property
     def nnr(self):
@@ -122,6 +124,14 @@ class Component:
     def nnl(self, index):
         """Set a component object as the left nearest neighbour"""
         self._nnl = index
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, t):
+        self._type = t
 
     """
         PROPERTY
@@ -158,9 +168,3 @@ class Component:
     """
         METHOD
     """
-
-    def same_row_as_matrix(self):
-        if type(self._cached_same_row) != list:
-            return self._cached_same_row
-        self._cached_same_row = np.array([[v.xmin, v.ymin, v.xmax, v.ymax] for v in self._same_row])
-        return self._cached_same_row
