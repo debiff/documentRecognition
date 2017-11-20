@@ -203,3 +203,11 @@ def draw_line(img, rect_list, k_edge):
         for e in k_edge:
             for l in e:
                 cv2.line(img, (rect_list[c][0], rect_list[c][1]), (rect_list[l][0], rect_list[l][1]), (25,64,128))
+
+
+def draw(image, component):
+    cv2.drawContours(image, [component.contour], -1, 0, cv2.FILLED)
+
+
+def save(image, path):
+    cv2.imwrite(path, image)

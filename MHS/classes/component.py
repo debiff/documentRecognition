@@ -61,7 +61,7 @@ class Component:
 
     @property
     def inner_components(self):
-        return self._inner_bb
+        return self._inner_components
 
     @inner_components.setter
     def inner_components(self, cc_list):

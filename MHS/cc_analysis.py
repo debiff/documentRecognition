@@ -22,10 +22,10 @@ def cc_same_row_new(cc_array, comp):
 
 
 def neighbors_new(comp):
-    right = np.where(((comp.same_row.as_matrix()[:, 0] - comp.xmax) > 0))[0].tolist()
-    left = np.where(((comp.xmin - comp.same_row.as_matrix()[:, 2]) > 0))[0].tolist()
-    nnr = comp.same_row.as_list()[right[np.argmin(comp.same_row.as_matrix()[right][:, 0])]] if len(right) > 0 else -1
-    nnl = comp.same_row.as_list()[left[np.argmax(comp.same_row.as_matrix()[left][:, 2])]] if len(left) > 0 else -1
+    right = np.where(((comp.same_row.as_matrix_bb()[:, 0] - comp.xmax) > 0))[0].tolist()
+    left = np.where(((comp.xmin - comp.same_row.as_matrix_bb()[:, 2]) > 0))[0].tolist()
+    nnr = comp.same_row.as_list()[right[np.argmin(comp.same_row.as_matrix_bb()[right][:, 0])]] if len(right) > 0 else -1
+    nnl = comp.same_row.as_list()[left[np.argmax(comp.same_row.as_matrix_bb()[left][:, 2])]] if len(left) > 0 else -1
     return nnr, nnl
 
 
@@ -72,13 +72,13 @@ def create_component_new(contours_list, t_area, t_density, t_ratio):
                 Component(i, x, y, x + w, y + h, 'text', area, cont))
 
     for comp in component_collector.as_list():
-        same_column = cc_same_column_new(component_collector.as_matrix(), comp)
+        same_column = cc_same_column_new(component_collector.as_matrix_bb(), comp)
         comp.same_column = [component_collector.as_list()[c] for c in same_column]
 
-        same_row = cc_same_row_new(component_collector.as_matrix(), comp)
+        same_row = cc_same_row_new(component_collector.as_matrix_bb(), comp)
         comp.same_row = [component_collector.as_list()[c] for c in same_row]
 
-        inner_components = inner_bb_new(component_collector.as_matrix(), comp)
+        inner_components = inner_bb_new(component_collector.as_matrix_bb(), comp)
         comp.inner_components = [component_collector.as_list()[c] for c in inner_components]
 
         nnr, nnl = neighbors_new(comp)

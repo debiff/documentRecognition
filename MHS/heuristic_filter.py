@@ -11,3 +11,9 @@ def heuristic_f(cc_dict, t_inside):
         else:
             text_element[index] = cc
     return text_element, non_text_element
+
+
+def heuristic_f_new(region, t_inside):
+    for cc in region.included.as_list():
+        if len(cc.inner_components.as_list()) > t_inside:
+            cc.type = 'non_text'

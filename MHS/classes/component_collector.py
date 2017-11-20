@@ -1,7 +1,33 @@
 __author__ = 'Simone Biffi'
 
 import numpy as np
+import statistics
 
+
+def clear_cache(f):
+    def wrapper(self, component):
+        self._cached_bounding_boxes = None
+        self._cached_dict = {}
+        self._cached_matrix = None
+        self._cached_text_components = None
+        self._cached_non_text_components = None
+        self._max_area_component = None
+        self._min_area_component = None
+        self._mean_area = None
+        self._median_area = None
+
+        self._max_width_component = None
+        self._min_width_component = None
+        self._mean_width = None
+        self._median_width = None
+
+        self._min_height_component = None
+        self._max_height_component = None
+        self._mean_height = None
+        self._median_height = None
+
+        return f(self, component)
+    return wrapper
 
 class ComponentCollector:
 
@@ -12,6 +38,21 @@ class ComponentCollector:
         self._cached_matrix = None
         self._cached_text_components = None
         self._cached_non_text_components = None
+
+        self._max_area_component = None
+        self._min_area_component = None
+        self._mean_area = None
+        self._median_area = None
+
+        self._max_width_component = None
+        self._min_width_component = None
+        self._mean_width = None
+        self._median_width = None
+
+        self._min_height_component = None
+        self._max_height_component = None
+        self._mean_height = None
+        self._median_height = None
 
     """
         GETTER AND SETTER
@@ -24,25 +65,17 @@ class ComponentCollector:
     """
         METHOD
     """
-
+    @clear_cache
     def add_component(self, component):
         self._components.append(component)
-        self._clear_cache()
 
+    @clear_cache
     def add_components(self, components):
         self._components.extend(components)
-        self._clear_cache()
 
+    @clear_cache
     def remove_component(self, component):
         self._components.pop(self._components.index(component))
-        self._clear_cache()
-
-    def _clear_cache(self):
-        self._cached_bounding_boxes = None
-        self._cached_dict = {}
-        self._cached_matrix = None
-        self._cached_text_components = None
-        self._cached_non_text_components = None
 
     def as_list(self):
         return self._components
@@ -54,7 +87,7 @@ class ComponentCollector:
         self._cached_dict = {v.id: v for v in self._components}
         return self._cached_dict
 
-    def as_matrix(self):
+    def as_matrix_bb(self):
         if self._cached_matrix is not None:
             return self._cached_matrix
 
@@ -82,4 +115,27 @@ class ComponentCollector:
                 self._cached_non_text_components.add_component(c)
 
         return self._cached_non_text_components
+
+    def statistics(self):
+        self._max_area_component = max(self.as_list(), key=lambda x: x.area)
+        self._min_area_component = min(self.as_list(), key=lambda x: x.area)
+        # self._mean_area = sum(self.as_list(), key=lambda x: x.area) / len(self.as_list())
+        self._mean_area = np.mean([x.area for x in self.as_list()])
+        self._median_area = np.median([x.area for x in self.as_list()])
+
+        self._max_width_component = max(self.as_list(), key=lambda x: x.bb_width)
+        self._min_width_component = min(self.as_list(), key=lambda x: x.bb_width)
+        # self._mean_width = sum(self.as_list(), key=lambda x: x.bb_width) / len(self.as_list())
+        self._mean_width = np.mean([x.bb_width for x in self.as_list()])
+        self._median_width = np.median([x.bb_width for x in self.as_list()])
+
+        self._max_height_component = max(self.as_list(), key=lambda x: x.bb_height)
+        self._min_height_component = min(self.as_list(), key=lambda x: x.bb_height)
+        # self._mean_height = sum(self.as_list(), key=lambda x: x.bb_height) / len(self.as_list())
+        self._mean_height = np.mean([x.bb_height for x in self.as_list()])
+        self._median_height = np.median([x.bb_height for x in self.as_list()])
+
+
+
+
 
