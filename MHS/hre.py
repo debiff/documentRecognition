@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def smoothing(arr, window):
     smoothed_list = []
     for i, x in np.ndenumerate(arr):
@@ -42,6 +43,7 @@ def separate_b_w(arr):
         if arr[i] > 0 and arr[i-1] == 0:
             w_list.append(arr[i])
     return np.array(b_list), np.array(w_list)
+
 
 def variance(arr):
     mean = np.mean(arr)

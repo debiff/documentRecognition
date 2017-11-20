@@ -17,8 +17,8 @@ class Component:
         self._same_row = ComponentCollector()
         self._nr = ComponentCollector()
         self._nl = ComponentCollector()
-        self._nnr = -1
-        self._nnl = -1
+        self._nnr = 0
+        self._nnl = 0
         self._area = area
         self._type = type
 
@@ -111,9 +111,9 @@ class Component:
         return self._nnr
 
     @nnr.setter
-    def nnr(self, index):
+    def nnr(self, comp):
         """Set a component object as the right nearest neighbour"""
-        self._nnr = index
+        self._nnr = comp
 
     @property
     def nnl(self):
@@ -121,9 +121,9 @@ class Component:
         return self._nnl
 
     @nnl.setter
-    def nnl(self, index):
+    def nnl(self, comp):
         """Set a component object as the left nearest neighbour"""
-        self._nnl = index
+        self._nnl = comp
 
     @property
     def type(self):
