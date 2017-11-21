@@ -1,5 +1,5 @@
-def heuristic(region, t_inside):
-    for cc in region.included.as_list():
+def heuristic(component_collector, t_inside):
+    for cc in component_collector.as_list():
         if len(cc.inner_components.as_list()) > t_inside:
             cc.type = 'non_text'
 

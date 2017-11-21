@@ -5,7 +5,7 @@ from MHS.classes.component_collector import ComponentCollector
 
 class Component:
 
-    def __init__(self, id_component, xmin, ymin, xmax, ymax, type, area=None, contour=None):
+    def __init__(self, id_component, xmin, ymin, xmax, ymax, type=None, area=None, contour=None):
         self._id = id_component
         self._xmin = xmin
         self._ymin = ymin

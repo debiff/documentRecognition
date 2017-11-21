@@ -1,6 +1,7 @@
 __author__ = 'Simone Biffi'
 import numpy as np
 from helper import component as h_comp
+import cv2
 
 
 class Region:
@@ -11,6 +12,11 @@ class Region:
         self._ymin = ymin
         self._xmax = xmax
         self._ymax = ymax
+        self._included = component_collector
+
+        self.draw('text')
+        kernel = np.ones((5, 5), np.uint8)
+        self._pixels = cv2.erode(self._pixels, kernel, iterations=1)
 
         """
             histograms are stored with 0 value where there aren't any black pixel
@@ -36,8 +42,6 @@ class Region:
         self._horizontal_median_white = np.median(self._horizontal_white) if (self._horizontal_white.size > 0) else 0
         self._horizontal_variance_black = np.var(self._horizontal_black) if (self._horizontal_black.size > 0) else 0
         self._horizontal_variance_white = np.var(self._horizontal_white) if (self._horizontal_white.size > 0) else 0
-
-        self._included = component_collector
 
     """
             GETTER AND SETTER
@@ -160,10 +164,12 @@ class Region:
     def draw(self, type):
         if self._pixels is not None:
             return self._pixels
+
         self._pixels = np.ones((self.ymax, self.xmax), dtype="uint8") * 255
-        for c in self.included.as_list():
-            if c.type == type:
-                h_comp.draw(self._pixels, c)
+
+        component_list = self.included.text_component().as_list() if type == 'text' else self.included.non_text_component().as_list()
+        for c in component_list:
+            cv2.drawContours(self._pixels, [c.contour], -1, 0, cv2.FILLED)
         return self._pixels
 
     def save(self, path):
@@ -172,9 +178,10 @@ class Region:
         h_comp.save(self._pixels, path)
 
     def _set_histograms(self):
-        self._vertical_histogram = np.sum(self._pixels, axis=0)
+        self.pixels = self.switch_to_bin
+        self._vertical_histogram = np.array(np.sum(self._pixels, axis=0), dtype='int64')
         self._vertical_histogram[self._vertical_histogram > 0] = -1
-        self._horizontal_histogram = np.sum(self._pixels, axis=1)
+        self._horizontal_histogram = np.array(np.sum(self._pixels, axis=1), dtype='int64')
         self._horizontal_histogram[self._horizontal_histogram > 0] = -1
 
     def _set_rle(self):

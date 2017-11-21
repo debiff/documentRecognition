@@ -15,8 +15,8 @@ region_collector = RegionCollector()
 img, gray = image.load_and_gray('./samples/icdar.jpg')
 binary = image.binarize(gray)
 
-kernel = np.ones((5, 5), np.uint8)
-dilation = cv2.erode(binary, kernel, iterations=1)
+#kernel = np.ones((5, 5), np.uint8)
+#dilation = cv2.erode(binary, kernel, iterations=1)
 # finds component through findcontours
 contours, hierarchy = component.find_component(binary)
 
@@ -24,10 +24,12 @@ print((datetime.now()-timer))
 comp_collector = cc_analysis.create_component_new(contours, 6, 0.15, 0.06)
 print((datetime.now()-timer))
 
+component_filter.heuristic(comp_collector, 4)
 document = Region(0, 0, img.shape[1], img.shape[0], comp_collector)
-component_filter.heuristic(document, 4)
 
 region_collector.add_region(document)
+
+recursive_filter.homogeneity(document)
 
 
 def ricorsive_filter(region_collector, region):

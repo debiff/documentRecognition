@@ -193,6 +193,7 @@ def draw_rect_from_list(img, rect_list):
         cv2.rectangle(img, (rect_list[c][0],rect_list[c][1]),(rect_list[c][2],rect_list[c][3]), (36, 127, 227), 1)
     #cv2.imwrite('./samples/result.png', img)
 
+
 def draw_rect(img, xmin, ymin, xmax, ymax, color):
     cv2.rectangle(img, (xmin,ymin),(xmax,ymax), color, 1)
     #cv2.imwrite('./samples/result.png', img)
