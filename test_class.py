@@ -7,7 +7,7 @@ from MHS import cc_analysis, heuristic_filter, recursive_filter
 from MHS.classes.region import Region
 from MHS.classes.region_collector import RegionCollector
 import numpy as np
-from manager.filter import maximum_median, minimum_median
+import manager.filter as component_filter
 
 timer = datetime.now()
 region_collector = RegionCollector()
@@ -25,7 +25,7 @@ comp_collector = cc_analysis.create_component_new(contours, 6, 0.15, 0.06)
 print((datetime.now()-timer))
 
 document = Region(0, 0, img.shape[1], img.shape[0], comp_collector)
-heuristic_filter.heuristic_f_new(document, 4)
+component_filter.heuristic(document, 4)
 
 region_collector.add_region(document)
 
@@ -34,11 +34,11 @@ def ricorsive_filter(region_collector, region):
     changed = True
     while changed:
         changed = False
-        if maximum_median(region):
+        if component_filter.maximum_median(region):
             changed = True
             region.included.max_area_component.type = 'non_text'
             region.included.manually_clear_cache()
-        elif minimum_median(region):
+        elif component_filter.minimum_median(region):
             changed = True
             region.included.min_area_component.type = 'non_text'
             region.included.manually_clear_cache()

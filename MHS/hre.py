@@ -37,7 +37,7 @@ def distances(arr):
 def separate_b_w(arr):
     b_list = []
     w_list = []
-    for i in range(1,arr.size):
+    for i in range(1, arr.size):
         if arr[i] > 0 and arr[i-1] < 0:
             b_list.append(arr[i])
         if arr[i] > 0 and arr[i-1] == 0:

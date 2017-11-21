@@ -6,6 +6,14 @@ from MHS import hre
 from datetime import datetime
 
 
+def homogeneity(region):
+    return True
+
+
+def split(region, index, direction):
+    return
+
+
 def vertical_homogeneity(region, xmin, ymin):
     region = np.copy(region)
     #region[region == 0] = 1

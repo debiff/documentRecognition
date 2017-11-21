@@ -1,3 +1,8 @@
+def heuristic(region, t_inside):
+    for cc in region.included.as_list():
+        if len(cc.inner_components.as_list()) > t_inside:
+            cc.type = 'non_text'
+
 
 def maximum_median(region):
 
@@ -69,3 +74,5 @@ def minimum_median(region):
                          len(included.min_area_component.nl.as_list())) > 2):
                 return True
     return False
+
+
