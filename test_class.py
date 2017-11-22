@@ -11,13 +11,9 @@ import manager.filter as component_filter
 
 timer = datetime.now()
 region_collector = RegionCollector()
-# loads the image and convert to grayscale
 img, gray = image.load_and_gray('./samples/icdar.jpg')
 binary = image.binarize(gray)
 
-#kernel = np.ones((5, 5), np.uint8)
-#dilation = cv2.erode(binary, kernel, iterations=1)
-# finds component through findcontours
 contours, hierarchy = component.find_component(binary)
 
 print((datetime.now()-timer))
