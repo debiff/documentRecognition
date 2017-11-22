@@ -10,6 +10,9 @@ class RegionCollector:
     """
         GETTER AND SETTER
     """
+    @property
+    def region_tree(self):
+        return self._region_tree
 
     """
         PROPERTY
@@ -19,6 +22,11 @@ class RegionCollector:
     """
         METHOD
     """
-    def add_region(self, region, parent = None):
+    def add_region(self, region, parent=None):
         node = Node(identifier=uuid.uuid4(), data=region)
         self._region_tree.add_node(node, parent)
+
+    def add_regions(self, regions, parent=None):
+        for region in regions:
+            node = Node(identifier=uuid.uuid4(), data=region)
+            self._region_tree.add_node(node, parent)

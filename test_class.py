@@ -29,8 +29,8 @@ document = Region(0, 0, img.shape[1], img.shape[0], comp_collector)
 
 region_collector.add_region(document)
 
-recursive_filter.homogeneity(document)
-
+recursive_filter.multilevel_classification(region_collector.region_tree.get_node(region_collector.region_tree.root), region_collector)
+print((datetime.now()-timer))
 
 def ricorsive_filter(region_collector, region):
     changed = True
@@ -46,4 +46,3 @@ def ricorsive_filter(region_collector, region):
             region.included.manually_clear_cache()
 
 ricorsive_filter(region_collector, document)
-print((datetime.now()-timer))

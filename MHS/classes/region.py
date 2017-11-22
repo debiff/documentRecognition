@@ -165,11 +165,14 @@ class Region:
         if self._pixels is not None:
             return self._pixels
 
-        self._pixels = np.ones((self.ymax, self.xmax), dtype="uint8") * 255
+        self._pixels = np.ones((self.ymax - self.ymin, self.xmax - self.xmin), dtype="uint8") * 255
 
         component_list = self.included.text_component().as_list() if type == 'text' else self.included.non_text_component().as_list()
         for c in component_list:
-            cv2.drawContours(self._pixels, [c.contour], -1, 0, cv2.FILLED)
+            fitted_contours = c.contour
+            fitted_contours[:, :, 0] -= self.xmin
+            fitted_contours[:, :, 1] -= self.ymin
+            cv2.drawContours(self._pixels, [fitted_contours], -1, 0, cv2.FILLED)
         return self._pixels
 
     def save(self, path):
