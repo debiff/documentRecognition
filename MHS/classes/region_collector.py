@@ -28,5 +28,6 @@ class RegionCollector:
 
     def add_regions(self, regions, parent=None):
         for region in regions:
-            node = Node(identifier=uuid.uuid4(), data=region)
-            self._region_tree.add_node(node, parent)
+            if len(region.included.as_list()) > 0:
+                node = Node(identifier=uuid.uuid4(), data=region)
+                self._region_tree.add_node(node, parent)

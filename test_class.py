@@ -21,24 +21,12 @@ comp_collector = cc_analysis.create_component_new(contours, 6, 0.15, 0.06)
 print((datetime.now()-timer))
 
 component_filter.heuristic(comp_collector, 4)
-document = Region(0, 0, img.shape[1], img.shape[0], comp_collector)
+document = Region(0, 0, img.shape[1], img.shape[0], comp_collector, True)
 
 region_collector.add_region(document)
 
-recursive_filter.multilevel_classification(region_collector.region_tree.get_node(region_collector.region_tree.root), region_collector)
-print((datetime.now()-timer))
+component_filter.recursive_filter(region_collector)
 
-def ricorsive_filter(region_collector, region):
-    changed = True
-    while changed:
-        changed = False
-        if component_filter.maximum_median(region):
-            changed = True
-            region.included.max_area_component.type = 'non_text'
-            region.included.manually_clear_cache()
-        elif component_filter.minimum_median(region):
-            changed = True
-            region.included.min_area_component.type = 'non_text'
-            region.included.manually_clear_cache()
-
-ricorsive_filter(region_collector, document)
+region_collector.region_tree.get_node(region_collector.region_tree.root).data.manually_clear_cache()
+for leaf in region_collector.region_tree.leaves(region_collector.region_tree.root):
+    leaf.data.save('./samples/split/' + str(leaf.identifier) + '.png', 'text')
