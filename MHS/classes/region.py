@@ -42,8 +42,8 @@ def clear_cache(f):
 
 class Region:
 
-    def __init__(self, xmin, ymin, xmax, ymax, component_collector, erode=None):
-        self._bin_pixels_text = None
+    def __init__(self, xmin, ymin, xmax, ymax, component_collector, erode=None, bin_pixels_text=None):
+        self._bin_pixels_text = bin_pixels_text if bin_pixels_text is not None else None
         self._printable_pixels_text = None
         self._bin_pixels_non_text = None
         self._printable_pixels_non_text = None
@@ -60,7 +60,7 @@ class Region:
             histograms are stored with 0 value where there aren't any black pixel
             and -1 value where there is at least one black pixel
         """
-        if erode:
+        if erode is not None:
             self._erode('text')
         self._vertical_histogram = None
         self._horizontal_histogram = None
@@ -239,21 +239,8 @@ class Region:
         return np.array(b_list), np.array(w_list)
 
     def _erode(self, type_component):
-        if type_component == 'total':
-            if self._printable_pixels_total is None:
-                self._draw(type_component)
-            pixels = self._printable_pixels_total
-        elif type_component == 'text':
-            if self._printable_pixels_text is None:
-                self._draw(type_component)
-            pixels = self._printable_pixels_text
-        elif type_component == 'non_text':
-            if self._printable_pixels_non_text is None:
-                self._draw(type_component)
-            pixels = self._printable_pixels_non_text
-
         kernel = np.ones((5, 5), np.uint8)
-        pixels = cv2.erode(pixels, kernel, iterations=1)
+        self._printable_pixels_text = cv2.erode(self.printable_pixel(type_component), kernel, iterations=1)
 
     def bin_pixel(self, components_type):
         if components_type == 'text':

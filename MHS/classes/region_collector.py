@@ -28,6 +28,7 @@ class RegionCollector:
 
     def add_regions(self, regions, parent=None):
         for region in regions:
-            if len(region.included.as_list()) > 0:
+            if region.bin_pixel('text')[region.bin_pixel('text') == 1].size > 0 \
+                    or len(region.included.text_component().as_list()) > 0:
                 node = Node(identifier=uuid.uuid4(), data=region)
                 self._region_tree.add_node(node, parent)

@@ -65,13 +65,16 @@ def split_black(region, direction):
 
             """
             count += rle[i] + rle[i + 2]
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [count], direction)
 
             region_left = [region.xmin, region.ymin, region.xmin + count, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin, region.xmax, region.ymin + count]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
+
             region_right = [region.xmin + count + 1, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin + count + 1, region.xmax, region.ymax]
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[1]])
 
-            bb_list.extend([region_left, region_right])
             break
 
         elif (i_max_rle == i + 2 == len(rle) - 1) or (i_max_rle + 2 == i + 2 == len(rle) - 1):
@@ -84,12 +87,15 @@ def split_black(region, direction):
             Cut last black space and region end with white space
             |---   ---   -----   |
             """
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [count], direction)
+
             region_left = [region.xmin, region.ymin, region.xmin + count, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin, region.xmax, region.ymin + count]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
+
             region_right = [region.xmin + count + 1, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin + count + 1, region.xmax, region.ymax]
-
-            bb_list.extend([region_left, region_right])
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[1]])
             break
 
         elif i + 2 == i_max_rle:
@@ -99,31 +105,34 @@ def split_black(region, direction):
             """
             count += math.ceil(rle[i] / 2)
             cut_left = count
-
-            region_left = [region.xmin, region.ymin, region.xmin + cut_left, region.ymax] if direction == 'vertical' \
-                else [region.xmin, region.ymin, region.xmax, region.ymin + cut_left]
-
             count += math.floor(rle[i] / 2) + rle[i + 2] + math.ceil(rle[i + 4] / 2)
             cut_right = count
 
-            region_center = [region.xmin + cut_left + 1, region.ymin, region.xmin + cut_right, region.ymax] if direction == 'vertical' \
-                else [region.xmin, region.ymin + cut_left + 1, region.xmax, region.ymin + cut_right]
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [cut_left, cut_right], direction)
 
-            region_right = [region.xmin + cut_right + 1, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
-                else [region.xmin, region.ymin + cut_right + 1, region.xmax, region.ymax]
+            region_left = [region.xmin, region.ymin, region.xmin + cut_left, region.ymax] if direction == 'vertical' \
+                else [region.xmin, region.ymin, region.xmax, region.ymin + cut_left]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
 
-            bb_list.extend([region_left, region_center, region_right])
+            region_center = [region.xmin + cut_left + 1, region.ymin, region.xmin + cut_right, region.ymax] \
+                if direction == 'vertical' else [region.xmin, region.ymin + cut_left + 1, region.xmax, region.ymin + cut_right]
+            bb_list.append([region_center[0], region_center[1], region_center[2], region_center[3], splitted_pixels[1]])
+
+            region_right = [region.xmin + cut_right + 1, region.ymin, region.xmax, region.ymax] \
+                if direction == 'vertical' else [region.xmin, region.ymin + cut_right + 1, region.xmax, region.ymax]
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[1]])
             break
 
         else:
             count += rle[i]
 
     for bb in bb_list:
-        bb_comp = Component(None, bb[0], bb[1], bb[2], bb[3])
-        comp_collector = ComponentCollector()
-        inner_components = cc_analysis.inner_bb_new(region.included.as_matrix_bb(), bb_comp)
-        comp_collector.add_components([region.included.as_list()[c] for c in inner_components])
-        region_list.append(Region(bb[0], bb[1], bb[2], bb[3], comp_collector))
+        if len(region.included.text_component().as_list()):
+            bb_comp = Component(None, bb[0], bb[1], bb[2], bb[3])
+            comp_collector = ComponentCollector()
+            inner_components = cc_analysis.inner_bb_new(region.included.as_matrix_bb(), bb_comp)
+            comp_collector.add_components([region.included.as_list()[c] for c in inner_components])
+            region_list.append(Region(bb[0], bb[1], bb[2], bb[3], comp_collector, bin_pixels_text=bb[4]))
 
     return region_list
 
@@ -147,11 +156,16 @@ def split_white(region, direction):
             |---       ---   ---   ---|
             """
             count += rle[i]
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [count], direction)
+
             region_left = [region.xmin, region.ymin, region.xmin + count, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin, region.xmax, region.ymin + count]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
+
             region_right = [region.xmin + count + 1, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin + count + 1, region.xmax, region.ymax]
-            bb_list.extend([region_left, region_right])
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[1]])
+
             break
 
         elif (i_max_rle == i == len(rle) - 1) or ((i_max_rle + 2) == (i + 2) == len(rle) - 1):
@@ -161,38 +175,54 @@ def split_white(region, direction):
 
             or
 
-            Cut first white space and region end with black space
+            Cut last white space and region end with black space
             |---    ---   ---           ---|
             """
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [count], direction)
+
             region_left = [region.xmin, region.ymin, region.xmin + count, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin, region.xmax, region.ymin + count]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
+
             region_right = [region.xmin + count + 1, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
                 else [region.xmin, region.ymin + count + 1, region.xmax, region.ymax]
-            bb_list.extend([region_left, region_right])
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[1]])
             break
 
         elif i_max_rle == i:
             """
-            Cut last white space between two black space
+            Cut white space between two black space
             |---    ---            ---   ---|
             """
-            region_left = [region.xmin, region.ymin, region.xmin + count, region.ymax] if direction == 'vertical' \
-                else [region.xmin, region.ymin, region.xmax, region.ymin + count]
+            cut_left = count
             count += rle[i]
-            region_right = [region.xmin + count, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
-                else [region.xmin, region.ymin + count, region.xmax, region.ymax]
-            bb_list.extend([region_left, region_right])
+            cut_right = count
+            splitted_pixels = split_pixels(region.bin_pixel('text'), [cut_left, cut_right], direction)
+
+            region_left = [region.xmin, region.ymin, region.xmin + cut_left, region.ymax] if direction == 'vertical' \
+                else [region.xmin, region.ymin, region.xmax, region.ymin + cut_left]
+            bb_list.append([region_left[0], region_left[1], region_left[2], region_left[3], splitted_pixels[0]])
+
+            region_right = [region.xmin + cut_right, region.ymin, region.xmax, region.ymax] if direction == 'vertical' \
+                else [region.xmin, region.ymin + cut_right, region.xmax, region.ymax]
+            bb_list.append([region_right[0], region_right[1], region_right[2], region_right[3], splitted_pixels[2]])
         else:
             count += rle[i]
 
     for bb in bb_list:
-        bb_comp = Component(None, bb[0], bb[1], bb[2], bb[3])
-        comp_collector = ComponentCollector()
-        inner_components = cc_analysis.inner_bb_new(region.included.as_matrix_bb(), bb_comp)
-        comp_collector.add_components([region.included.as_list()[c] for c in inner_components])
-        region_list.append(Region(bb[0], bb[1], bb[2], bb[3], comp_collector))
+        if len(region.included.text_component().as_list()):
+            bb_comp = Component(None, bb[0], bb[1], bb[2], bb[3])
+            comp_collector = ComponentCollector()
+            inner_components = cc_analysis.inner_bb_new(region.included.as_matrix_bb(), bb_comp)
+            comp_collector.add_components([region.included.as_list()[c] for c in inner_components])
+            region_list.append(Region(bb[0], bb[1], bb[2], bb[3], comp_collector, bin_pixels_text=bb[4]))
 
     return region_list
+
+
+def split_pixels(pixels, idx_split, direction):
+    axis = 1 if direction == 'vertical' else 0
+    return np.array_split(pixels, idx_split, axis=axis)
 
 
 def recursive_splitting(node, direction, region_collector):
@@ -200,10 +230,13 @@ def recursive_splitting(node, direction, region_collector):
         return
     split(node, direction, region_collector)
     for leaves in region_collector.region_tree.leaves(node.identifier):
-        recursive_splitting(leaves, direction, region_collector)
+        if leaves.identifier != node.identifier:
+            recursive_splitting(leaves, direction, region_collector)
 
 
 def multilevel_classification(node, region_collector):
     recursive_splitting(node, 'vertical', region_collector)
-    for leaves in region_collector.region_tree.leaves(node.identifier):
+
+    vertical_nodes = region_collector.region_tree.leaves(node.identifier)
+    for leaves in vertical_nodes:
         recursive_splitting(leaves, 'horizontal', region_collector)

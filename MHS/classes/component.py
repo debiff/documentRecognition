@@ -3,6 +3,7 @@ __author__ = 'Simone Biffi'
 import numpy as np
 from MHS.classes.component_collector import ComponentCollector
 
+
 class Component:
 
     def __init__(self, id_component, xmin, ymin, xmax, ymax, type=None, area=None, contour=None):
