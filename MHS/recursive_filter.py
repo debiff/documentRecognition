@@ -229,14 +229,15 @@ def recursive_splitting(node, direction, region_collector):
     if homogeneity(node, direction):
         return
     split(node, direction, region_collector)
-    for leaves in region_collector.region_tree.leaves(node.identifier):
-        if leaves.identifier != node.identifier:
-            recursive_splitting(leaves, direction, region_collector)
+    leaves = region_collector.region_tree.leaves(node.identifier)
+    for leaf in leaves:
+        if leaf.identifier != node.identifier:
+            recursive_splitting(leaf, direction, region_collector)
 
 
 def multilevel_classification(node, region_collector):
     recursive_splitting(node, 'vertical', region_collector)
 
     vertical_nodes = region_collector.region_tree.leaves(node.identifier)
-    for leaves in vertical_nodes:
-        recursive_splitting(leaves, 'horizontal', region_collector)
+    for leaf in vertical_nodes:
+        recursive_splitting(leaf, 'horizontal', region_collector)

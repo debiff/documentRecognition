@@ -200,7 +200,11 @@ class Region:
             fitted_contours = np.copy(c.contour)
             fitted_contours[:, :, 0] -= self.xmin
             fitted_contours[:, :, 1] -= self.ymin
-            cv2.drawContours(pixels, [fitted_contours], -1, 0, cv2.FILLED)
+            if (type == 'total' or type == 'non-text') and len(c.inner_components.as_list()) > 1 \
+                    and (c.bb_width > (self.xmax - self.xmin) / 2 or c.bb_height >(self.ymax - self.ymin) / 2):
+                cv2.drawContours(pixels, [fitted_contours], -1, 0, 1)
+            else:
+                cv2.drawContours(pixels, [fitted_contours], -1, 0, cv2.FILLED)
         return pixels
 
     def save(self, path, type):

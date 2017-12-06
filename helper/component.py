@@ -195,7 +195,7 @@ def draw_rect_from_list(img, rect_list):
 
 
 def draw_rect(img, xmin, ymin, xmax, ymax, color):
-    cv2.rectangle(img, (xmin,ymin),(xmax,ymax), color, 1)
+    cv2.rectangle(img, (xmin,ymin),(xmax,ymax), color, 2)
     #cv2.imwrite('./samples/result.png', img)
 
 

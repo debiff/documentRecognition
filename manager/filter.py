@@ -88,29 +88,35 @@ def recursive_filter(region_collector):
     while homogeneous_region_extraction:
         white_space_analysis = False
         homogeneous_region_extraction = False
-        for leaves in region_collector.region_tree.leaves(region_collector.region_tree.root):
-            if leaves.identifier not in clean_leaves:
+        leaves = region_collector.region_tree.leaves(region_collector.region_tree.root)
+        for leaf in leaves:
+            if leaf.identifier not in clean_leaves:
                 white_space_analysis = True
-                multilevel_classification(leaves, region_collector)
+                multilevel_classification(leaf, region_collector)
 
         if white_space_analysis:
-            for leaves in region_collector.region_tree.leaves(region_collector.region_tree.root):
-                if leaves.identifier not in clean_leaves:
-                    region_changed = True
-                    while region_changed:
-                        region_changed = False
-                        if maximum_median(leaves.data):
+            leaves = region_collector.region_tree.leaves(region_collector.region_tree.root)
+            for leaf in leaves:
+                if leaf.identifier not in clean_leaves:
+                    region_changed = False
+                    continue_analysis = True
+                    while continue_analysis:
+                        continue_analysis = False
+                        if maximum_median(leaf.data):
+                            continue_analysis = True
                             region_changed = True
                             homogeneous_region_extraction = True
-                            leaves.data.included.max_area_component.type = 'non_text'
-                            leaves.data.included.manually_clear_cache()
-                        elif minimum_median(leaves.data):
+                            leaf.data.included.max_area_component.type = 'non_text'
+                            leaf.data.included.manually_clear_cache()
+                            continue
+                        if minimum_median(leaf.data):
+                            continue_analysis = True
                             region_changed = True
                             homogeneous_region_extraction = True
-                            leaves.data.included.min_area_component.type = 'non_text'
-                            leaves.data.included.manually_clear_cache()
-                    if homogeneous_region_extraction and len(leaves.data.included.text_component().as_list()) > 0:
-                        leaves.data.manually_clear_cache()
+                            leaf.data.included.min_area_component.type = 'non_text'
+                            leaf.data.included.manually_clear_cache()
+                    if region_changed and len(leaf.data.included.text_component().as_list()) > 0:
+                        leaf.data.manually_clear_cache()
                     else:
-                        clean_leaves.append(leaves.identifier)
+                        clean_leaves.append(leaf.identifier)
 
