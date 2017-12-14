@@ -1,10 +1,10 @@
-
 class Line:
     def __init__(self, x_min, y_min, x_max, y_max):
         self._xmin = x_min
         self._ymin = y_min
         self._xmax = x_max
         self._ymax = y_max
+        self._below_lines = []
 
     @property
     def xmin(self):
@@ -21,3 +21,11 @@ class Line:
     @property
     def ymax(self):
         return self._ymax
+
+    @property
+    def below_lines(self):
+        return self._below_lines
+
+    @below_lines.setter
+    def below_lines(self, below_list):
+        self._below_lines = below_list

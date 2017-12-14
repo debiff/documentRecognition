@@ -1,6 +1,7 @@
 import numpy as np
 from postProcessing.classes.line import Line
 
+
 class LineCollector:
 
     def __init__(self):
