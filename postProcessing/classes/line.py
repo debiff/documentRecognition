@@ -29,3 +29,11 @@ class Line:
     @below_lines.setter
     def below_lines(self, below_list):
         self._below_lines = below_list
+
+    @property
+    def bounding_box(self):
+        return [self._xmin, self._ymin], [self._xmin, self._ymax], [self._xmax, self._ymax], [self._xmax, self._ymin]
+
+    @property
+    def height(self):
+        return self._ymax - self._ymin

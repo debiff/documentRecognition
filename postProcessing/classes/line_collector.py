@@ -16,6 +16,9 @@ class LineCollector:
         self._line_list.append(line)
         self._cached_matrix = None
 
+    def add_lines(self, lines):
+        self._line_list.extend(lines)
+
     def as_matrix(self):
         if self._cached_matrix is not None:
             return self._cached_matrix
@@ -35,7 +38,7 @@ class LineCollector:
         xmin_less_linemax = self.as_matrix()[:, 0] <= line.xmax
         and_3_4 = np.bitwise_and(linemin_less_xmin, xmin_less_linemax)
 
-        same_row = (np.maximum(self.as_matrix()[:, 1], line.ymin) - np.minimum(self.as_matrix()[:, 3], line.ymax))  < 0
+        same_row = (np.maximum(self.as_matrix()[:, 1], line.ymin) - np.minimum(self.as_matrix()[:, 3], line.ymax)) < 0
         return np.where(np.bitwise_and(np.bitwise_or(and_1_2, and_3_4), same_row))[0].tolist()
 
     def unify(self, overlapped, line):

@@ -1,23 +1,23 @@
+from postProcessing.classes.line_collector import LineCollector
+
+
 class Paragraph:
 
-    def __init__(self, x_min, y_min, x_max, y_max):
-        self._xmin = x_min
-        self._ymin = y_min
-        self._xmax = x_max
-        self._ymax = y_max
+    def __init__(self):
+        self._line_collector = LineCollector()
 
     @property
-    def xmin(self):
-        return self._xmin
+    def line_collector(self):
+        return self._line_collector
+
+    @line_collector.setter
+    def line_collector(self, line_collector):
+        self._line_collector = line_collector
 
     @property
-    def ymin(self):
-        return self._ymin
-
-    @property
-    def xmax(self):
-        return self._xmax
-
-    @property
-    def ymax(self):
-        return self._ymax
+    def bounding_box(self):
+        xmin = min(l.xmin for l in self._line_collector.as_list())
+        ymin = min(l.ymin for l in self._line_collector.as_list())
+        xmax = max(l.xmax for l in self._line_collector.as_list())
+        ymax = max(l.ymax for l in self._line_collector.as_list())
+        return [xmin, ymin, xmax, ymax]

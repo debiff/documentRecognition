@@ -8,13 +8,17 @@ class ParagraphCollector:
         self._paragraph_list = []
         self._cached_matrix = None
 
-    def add(self, paragraph):
-        if len(self._paragraph_list) > 0:
-            intersected = self.intersect(paragraph)
-            if len(intersected) > 0:
-                paragraph = self.unify(intersected, paragraph)
+    def add_paragraph(self, paragraph):
         self._paragraph_list.append(paragraph)
-        self._cached_matrix = None
+        # if len(self._paragraph_list) > 0:
+        #     intersected = self.intersect(paragraph)
+        #     if len(intersected) > 0:
+        #         paragraph = self.unify(intersected, paragraph)
+        # self._paragraph_list.append(paragraph)
+        # self._cached_matrix = None
+
+    def add_paragraphs(self, paragraphs):
+        self._paragraph_list.extend(paragraphs)
 
     def intersect(self, paragraph):
         xmin_less_pmin = self.as_matrix()[:, 0] <= paragraph.xmin

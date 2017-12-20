@@ -6,17 +6,16 @@ from helper import component, image
 from MHS import cc_analysis
 from MHS.classes.region import Region
 from MHS.classes.region_collector import RegionCollector
-import numpy as np
 import manager.filter as component_filter
-import math
-from manager.post_processing import text_segmentation
+from manager.post_processing import text_segmentation, post_processing, find_paragraph, refine_paragraph
+from postProcessing.classes.line import Line
+from postProcessing.classes.paragraph_collector import ParagraphCollector
 import copy
 from postProcessing.classes.paragraph import Paragraph
-from postProcessing.classes.paragraph_collector import ParagraphCollector
 
 timer = datetime.now()
 region_collector = RegionCollector()
-img, gray = image.load_and_gray('./samples/icdar.jpg')
+img, gray = image.load_and_gray('./samples/00000190.jpg')
 binary = image.binarize(gray)
 
 
@@ -42,35 +41,6 @@ component_filter.recursive_filter(region_collector)
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.included.manually_clear_cache()
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.manually_clear_cache()
 
-
-def remove_text(document, bin):
-    for component in document.included.text_component().as_list():
-        bin[component.ymin:component.ymax, component.xmin:component.xmax] = 255
-    return bin
-
-
-def fill_non_text(non_text_image, non_text_image_bb):
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (math.ceil(non_text_image.shape[0] * 0.005),
-                                                        math.ceil(non_text_image.shape[1] * 0.005)))
-    res = cv2.morphologyEx(np.bitwise_not(non_text_image_bb), cv2.MORPH_DILATE, kernel)
-    res = np.bitwise_not(res)
-    res[non_text_image == 1] = 0
-    return res
-
-
-def compare_text_non_text(document, filled):
-    for component in document.included.text_component().as_list():
-        sub_image = filled[component.ymin:component.ymax, component.xmin:component.xmax]
-        where = np.where(sub_image == 0)
-        if len(where[0]) + len(where[1]) > 0:
-            component.type = 'non_text'
-
-
-def post_processing(document, bin):
-    non_text = remove_text(document, bin)
-    filled_non_text = fill_non_text(document.bin_pixel('non-text'), non_text)
-    compare_text_non_text(document, filled_non_text)
-
 post_processing(region_collector.region_tree.get_node(region_collector.region_tree.root).data, binary)
 
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.included.manually_clear_cache()
@@ -81,81 +51,80 @@ text_tree.add_region(region_collector.region_tree.get_node(region_collector.regi
 
 t_lines = text_segmentation(text_tree.region_tree.get_node(text_tree.region_tree.root).data)
 
+p_collector = find_paragraph(t_lines)
+p_collector = refine_paragraph(p_collector)
+p_list = []
 
-def intersect_x(matrix, xmin, xmax):
-    intersect_xmin = np.bitwise_and(matrix[:, 0] >= xmin, matrix[:, 0] <= xmax)
-    intersect_xmax = np.bitwise_and(matrix[:, 2] >= xmin, matrix[:, 2] <= xmax)
-    intersect = np.bitwise_or(intersect_xmin, intersect_xmax)
-    intersect = np.where(intersect)
-    return intersect[0].tolist()
+i = 0
+for p in p_collector.as_list():
+    img_test = copy.deepcopy(img)
+    for l in p.line_collector.as_list():
+        component.draw_rect(img_test, l.xmin, l.ymin, l.xmax, l.ymax, (255, 0, 0))
+    cv2.imwrite('./samples/split/line/' + str(i) + '.png', img_test)
+    i += 1
 
+# for p in p_list:
+#     l_bb_list = np.array([list(l.bounding_box) for l in p])
+#     l_bb_pt = l_bb_list.reshape((-1,1,2))
+#     hull = cv2.convexHull(l_bb_pt)
+#     cv2.drawContours(img, [hull], 0, (147, 0, 255), 2)
+# #cv2.imwrite('./samples/split/convex_hull.png', img)
 
-def intersect_y(matrix, ymin, ymax):
-    intersect_ymin = np.bitwise_and(matrix[:, 1] >= ymin, matrix[:, 1] <= ymax)
-    intersect_ymax = np.bitwise_and(matrix[:, 3] >= ymin, matrix[:, 3] <= ymax)
-    intersect = np.bitwise_or(intersect_ymin, intersect_ymax)
-    intersect = np.where(intersect)
-    return intersect[0].tolist()
-
-
-def find_paragraph(line_coll):
-    regions = []
-    region = []
-    for line in line_coll.as_list():
-        line_height = line.ymax - line.ymin
-        inter_x_id = intersect_x(line_coll.as_matrix(), line.xmin, line.xmax)
-        inter_x = [line_coll.as_list()[l] for l in inter_x_id]
-        inter_x = sorted(inter_x, key=lambda l: l.ymin)
-        line_idx = inter_x.index(line)
-        inter_x = inter_x[line_idx + 1:]    # ordered by ymin
-        inter_x = list(filter(lambda x: (x.ymin - line.ymax) < min(line_height, x.ymax - x.ymin) / 1.5, inter_x))
-        if len(inter_x) != 0:
-            inter_x_matrix = np.array([[v.xmin, v.ymin, v.xmax, v.ymax] for v in inter_x])
-            belows = [inter_x[0]]
-            inter_y_id = intersect_y(inter_x_matrix, belows[0].ymin, belows[0].ymax)
-            inter_y = [inter_x[l] for l in inter_y_id]
-            below_idx = inter_y.index(belows[0])
-            inter_y.pop(below_idx)
-            not_comparable = []
-            if len(inter_y) > 1:
-                not_comparable = list(filter(lambda x: (line_height > 1.5 * (x.ymax - x.ymin)) or
-                                                       ((x.ymax - x.ymin) > 1.5 * line_height), inter_y))
-            if len(inter_y) > 0 and len(not_comparable) == 0:
-                belows.extend(inter_y)
-            line.below_lines = belows
-
-    lines = copy.deepcopy(line_coll.as_list())
-    lines = sorted(lines, key=lambda l: l.ymin)
-    while len(lines) > 0:
-        line = lines[0]
-        region = [line]
-        find_text_column(line, region)
-        for l in region:
-            if l in lines:
-                l_idx = lines.index(l)
-                lines.pop(l_idx)
-        regions.append(region)
-    return regions
+    # x_min = min(l.xmin for l in p)
+    # x_max = max(l.xmax for l in p)
+    # y_min = min(l.ymin for l in p)
+    # y_max = max(l.ymax for l in p)
+    # p_collector.add(Paragraph(x_min, y_min, x_max, y_max))
 
 
-def find_text_column(line, region_list):
-    if len(line.below_lines) == 0:
-        return
-    for l in line.below_lines:
-        if l not in region_list:
-            region_list.append(l)
-        find_text_column(l, region_list)
+def same_line(line1, line2):
+    first_in_second = line2.ymin <= line1.ymin <= line2.ymax or line2.ymin <= line1.ymax <= line2.ymax
+    second_in_first = line1.ymin <= line2.ymin <= line1.ymax or line1.ymin <= line2.ymax <= line1.ymax
+    return first_in_second or second_in_first
 
 
-p_list = find_paragraph(t_lines)
+def unify_line(line1, line2):
+    xmin = min(line1.xmin, line2.xmin)
+    ymin = min(line1.ymin, line2.ymin)
+    xmax = max(line1.xmax, line2.xmax)
+    ymax = max(line1.ymax, line2.ymax)
+    return Line(xmin, ymin, xmax, ymax)
 
-p_collector = ParagraphCollector()
+i = 0
+while i <= len(p_list) - 1:
+    p_line = sorted(p_list[i], key=lambda l: l.ymin)
+    j = 0
+    while j <= len(p_line) - 2:
+        if same_line(p_line[j], p_line[j+1]):
+            new_line = unify_line(p_line[j], p_line[j+1])
+            p_line.pop(j + 1)
+            p_line.pop(j)
+            p_line.insert(j, new_line)
+        else:
+            j += 1
+    p_list[i] = p_line
+    i += 1
+i = 0
 for p in p_list:
-    x_min = min(l.xmin for l in p)
-    x_max = max(l.xmax for l in p)
-    y_min = min(l.ymin for l in p)
-    y_max = max(l.ymax for l in p)
-    p_collector.add(Paragraph(x_min, y_min, x_max, y_max))
+    img_test = copy.deepcopy(img)
+    for l in p:
+        component.draw_rect(img_test, l.xmin, l.ymin, l.xmax, l.ymax, (255, 0, 0))
+    cv2.imwrite('./samples/split/line/' + str(i) + '.png', img_test)
+    i += 1
+cv2.imwrite('./samples/split/line2.png', img)
+
+
+
+#return an array of points in counterclockwise order
+# def refine_paragraph(l_list):
+#     ordered_lines = sorted(l_list, key=lambda l: l.ymin)
+#     while len(ordered_lines == 1):
+#         if ordered_lines[0].ymin <= ordered_lines[1].ymin <= ordered_lines[0].ymax:
+
+
+for l in t_lines.as_list():
+    component.draw_rect(img, l.xmin, l.ymin, l.xmax, l.ymax, (255,0,0))
+cv2.imwrite('./samples/split/line.png', img)
 
 for p in p_collector.as_list():
     component.draw_rect(img, p.xmin, p.ymin, p.xmax, p.ymax, (255, 0, 0))
@@ -163,9 +132,9 @@ for p in p_collector.as_list():
 cv2.imwrite('./samples/split/region.png', img)
 
 
-for l in t_lines.as_list():
-    component.draw_rect(img, l.xmin, l.ymin, l.xmax, l.ymax, (255,0,0))
-cv2.imwrite('./samples/split/line.png', img)
+# for l in t_lines.as_list():
+#     component.draw_rect(img, l.xmin, l.ymin, l.xmax, l.ymax, (255,0,0))
+# cv2.imwrite('./samples/split/line.png', img)
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.save('./samples/split/root.png', 'text')
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.save('./samples/split/root_non_text.png', 'non-text')
 print((datetime.now()-timer))
