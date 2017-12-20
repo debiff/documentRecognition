@@ -12,6 +12,7 @@ from postProcessing.classes.line import Line
 from postProcessing.classes.paragraph_collector import ParagraphCollector
 import copy
 from postProcessing.classes.paragraph import Paragraph
+import numpy as np
 
 timer = datetime.now()
 region_collector = RegionCollector()
@@ -63,6 +64,39 @@ for p in p_collector.as_list():
     cv2.imwrite('./samples/split/line/' + str(i) + '.png', img_test)
     i += 1
 
+
+def contour_paragraph(lines):
+    lines = sorted(lines, key=lambda l: l.ymin)
+    i = 1
+    pt_left = [[lines[0].xmin, lines[0].ymin]]
+    pt_right = [[lines[0].xmax, lines[0].ymin]]
+
+    while i < len(lines):
+        # manage left side
+        if pt_left[len(pt_left) - 1][0] < lines[i].xmin or pt_left[len(pt_left) - 1][0] > lines[i].xmin:
+            pt_left.append([lines[i - 1].xmin, lines[i - 1].ymax])
+            pt_left.append([lines[i].xmin, lines[i - 1].ymax])
+
+        # manage right side
+        if pt_right[len(pt_right) - 1][0] < lines[i].xmax or pt_right[len(pt_right) - 1][0] > lines[i].xmax:
+            pt_right.append([lines[i - 1].xmax, lines[i - 1].ymax])
+            pt_right.append([lines[i].xmax, lines[i - 1].ymax])
+        i += 1
+    pt_left.append([lines[len(lines) - 1].xmin, lines[len(lines) - 1].ymax])
+    pt_right.append([lines[len(lines) - 1].xmax, lines[len(lines) - 1].ymax])
+    cont = []
+    cont.extend(pt_left)
+    cont.extend(reversed(pt_right))
+    return cont
+
+for p in p_collector.as_list():
+    c = np.array(contour_paragraph(p.line_collector.as_list()))
+    c = c.reshape((-1,1,2))
+    cv2.drawContours(img,[c],0,(147,0,255),2)
+cv2.imwrite('./samples/split/contorni.png', img)
+
+
+
 # for p in p_list:
 #     l_bb_list = np.array([list(l.bounding_box) for l in p])
 #     l_bb_pt = l_bb_list.reshape((-1,1,2))
@@ -75,45 +109,6 @@ for p in p_collector.as_list():
     # y_min = min(l.ymin for l in p)
     # y_max = max(l.ymax for l in p)
     # p_collector.add(Paragraph(x_min, y_min, x_max, y_max))
-
-
-def same_line(line1, line2):
-    first_in_second = line2.ymin <= line1.ymin <= line2.ymax or line2.ymin <= line1.ymax <= line2.ymax
-    second_in_first = line1.ymin <= line2.ymin <= line1.ymax or line1.ymin <= line2.ymax <= line1.ymax
-    return first_in_second or second_in_first
-
-
-def unify_line(line1, line2):
-    xmin = min(line1.xmin, line2.xmin)
-    ymin = min(line1.ymin, line2.ymin)
-    xmax = max(line1.xmax, line2.xmax)
-    ymax = max(line1.ymax, line2.ymax)
-    return Line(xmin, ymin, xmax, ymax)
-
-i = 0
-while i <= len(p_list) - 1:
-    p_line = sorted(p_list[i], key=lambda l: l.ymin)
-    j = 0
-    while j <= len(p_line) - 2:
-        if same_line(p_line[j], p_line[j+1]):
-            new_line = unify_line(p_line[j], p_line[j+1])
-            p_line.pop(j + 1)
-            p_line.pop(j)
-            p_line.insert(j, new_line)
-        else:
-            j += 1
-    p_list[i] = p_line
-    i += 1
-i = 0
-for p in p_list:
-    img_test = copy.deepcopy(img)
-    for l in p:
-        component.draw_rect(img_test, l.xmin, l.ymin, l.xmax, l.ymax, (255, 0, 0))
-    cv2.imwrite('./samples/split/line/' + str(i) + '.png', img_test)
-    i += 1
-cv2.imwrite('./samples/split/line2.png', img)
-
-
 
 #return an array of points in counterclockwise order
 # def refine_paragraph(l_list):
@@ -131,10 +126,6 @@ for p in p_collector.as_list():
 
 cv2.imwrite('./samples/split/region.png', img)
 
-
-# for l in t_lines.as_list():
-#     component.draw_rect(img, l.xmin, l.ymin, l.xmax, l.ymax, (255,0,0))
-# cv2.imwrite('./samples/split/line.png', img)
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.save('./samples/split/root.png', 'text')
 region_collector.region_tree.get_node(region_collector.region_tree.root).data.save('./samples/split/root_non_text.png', 'non-text')
 print((datetime.now()-timer))
