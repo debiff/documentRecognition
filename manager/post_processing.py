@@ -244,6 +244,11 @@ def refine_paragraph(paragraph_collector):
                 i += 1
         line_collector.add_lines(line_list)
         p.line_collector = line_collector
+
+    for p in paragraph_collector.as_list():
+        c = np.array(contour_paragraph(p.line_collector.as_list()))
+        p.contour = c
+
     return paragraph_collector
 
 
@@ -259,3 +264,30 @@ def unify_line(line1, line2):
     xmax = max(line1.xmax, line2.xmax)
     ymax = max(line1.ymax, line2.ymax)
     return Line(xmin, ymin, xmax, ymax)
+
+
+def contour_paragraph(lines):
+    lines = sorted(lines, key=lambda l: l.ymin)
+    i = 1
+    pt_left = [[lines[0].xmin, lines[0].ymin]]
+    pt_right = [[lines[0].xmax, lines[0].ymin]]
+
+    while i < len(lines):
+        # manage left side
+        if pt_left[len(pt_left) - 1][0] < lines[i].xmin or pt_left[len(pt_left) - 1][0] > lines[i].xmin:
+            pt_left.append([lines[i - 1].xmin, lines[i - 1].ymax])
+            pt_left.append([lines[i].xmin, lines[i - 1].ymax])
+
+        # manage right side
+        if pt_right[len(pt_right) - 1][0] < lines[i].xmax or pt_right[len(pt_right) - 1][0] > lines[i].xmax:
+            pt_right.append([lines[i - 1].xmax, lines[i - 1].ymax])
+            pt_right.append([lines[i].xmax, lines[i - 1].ymax])
+        i += 1
+    pt_left.append([lines[len(lines) - 1].xmin, lines[len(lines) - 1].ymax])
+    pt_right.append([lines[len(lines) - 1].xmax, lines[len(lines) - 1].ymax])
+    cont = []
+    cont.extend(pt_left)
+    cont.extend(reversed(pt_right))
+    cont = np.array(cont)
+    cont = cont.reshape((-1, 1, 2))
+    return cont

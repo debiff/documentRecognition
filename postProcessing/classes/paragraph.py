@@ -5,6 +5,7 @@ class Paragraph:
 
     def __init__(self):
         self._line_collector = LineCollector()
+        self._contour = None
 
     @property
     def line_collector(self):
@@ -21,3 +22,11 @@ class Paragraph:
         xmax = max(l.xmax for l in self._line_collector.as_list())
         ymax = max(l.ymax for l in self._line_collector.as_list())
         return [xmin, ymin, xmax, ymax]
+
+    @property
+    def contour(self):
+        return self._contour
+
+    @contour.setter
+    def contour(self, contour):
+        self._contour = contour
