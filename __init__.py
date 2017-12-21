@@ -1,45 +1,29 @@
+from manager import segmentation
+import os
+
 __author__ = 'Simone Biffi'
 
-from datetime import datetime
-from rtree import index
-import networkx as nx
-from helper import component, image
-import matplotlib.pyplot as plt
+path = os.path.abspath('./dataset')
 
 
-timer = datetime.now()
+recall = 0
+precision = 0
+i = 0
+for filename in os.listdir(path):
+    if filename.endswith(".jpg"):
+        print(filename + ' - ' + str(i))
 
-# data structures needed to store connected components
-idx = index.Index()
-G = nx.Graph()
-
-# loads the image and convert to grayscale
-img, gray = image.load_and_gray('./samples/icdar.jpg')
-
-# finds component through findcontours
-contours = component.find_component(gray)
-
-# creates the bounding box and insert in Graph, rTree and rect
-G, idx, rect = component.create_bb(G, contours, idx, 2)
-
-# finds the intersection between all the bounding box
-intersection = component.find_intersection(rect, idx)
-
-# connects the chains of intersected bounding boxes that aren't totally included each other
-G = component.connect_intersected(G, intersection)
-
-# finds the chain of connected bounding box (connected node in the graph)
-k_edge = sorted(map(sorted, nx.k_edge_components(G, k=1)))
-
-# unify the bounding box belonging to the same chain
-component.unify_overlap(G, k_edge, img, True)
-
-# Print the graph
-#plt.subplot(121)
-#nx.draw(G, with_labels=True, font_weight='bold')
-#plt.show()
-
-print((datetime.now()-timer))
-
-
+        image_path = path + '/' + filename
+        r, p = segmentation.run(image_path, filename)
+        recall += r
+        precision += p
+        i += 1
+        print('recall: ' + str(r))
+        print('precision: ' + str(p))
+recall = recall / i
+precision = precision / i
+f2 = 2 * ((recall * precision) /(recall + precision))
+print('average f2 score:' + str(f2))
+print('average recall: ' + str(recall))
+print('average precision: ' + str(precision))
 
