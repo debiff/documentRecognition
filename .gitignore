@@ -2,5 +2,6 @@
 samples/*
 dataset/*
 result/*
+data/*
 *.pyc
 *.py___jb_tmp___

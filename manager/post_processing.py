@@ -2,6 +2,7 @@ from postProcessing.classes.line import Line
 from postProcessing.classes.line_collector import LineCollector
 from postProcessing.classes.paragraph import Paragraph
 from postProcessing.classes.paragraph_collector import ParagraphCollector
+import statistics
 import numpy as np
 import math
 import copy
@@ -32,10 +33,23 @@ def compare_text_non_text(document, filled):
             component.type = 'non_text'
 
 
+def refine_non_text(filled):
+    im2, contours, hierarchy = cv2.findContours(filled, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    height, width = filled.shape
+    imm = np.ones((height, width), np.uint8) * 255
+    cv2.drawContours(imm, contours, -1, (0,0), -1)
+    imm[imm == 0] = 1
+    imm[imm == 255] = 0
+    imm[imm == 1] = 255
+    return contours, imm
+
+
 def post_processing(document, bin):
     non_text = remove_text(document, bin)
     filled_non_text = fill_non_text(document.bin_pixel('non-text'), non_text)
+    _, filled_non_text = refine_non_text(filled_non_text)
     compare_text_non_text(document, filled_non_text)
+    return filled_non_text
 
 
 # Find line phase
@@ -136,13 +150,16 @@ def find_paragraph(line_coll):
 
     lines = copy.deepcopy(line_coll.as_list())
     lines = sorted(lines, key=lambda l: l.ymin)
+
     while len(lines) > 0:
         # line = lines[0]
         # region = [line]
         paragraph = Paragraph()
+        added_line = []
         paragraph.line_collector.add_line(lines[0])
-        find_text_column(lines[0], paragraph)
-        for l in paragraph.line_collector.as_list():
+        added_line.append(lines[0])
+        find_text_column(lines[0], paragraph, added_line)
+        for l in added_line:
             if l in lines:
                 l_idx = lines.index(l)
                 lines.pop(l_idx)
@@ -152,13 +169,14 @@ def find_paragraph(line_coll):
     return paragraphs
 
 
-def find_text_column(line, paragraph):
+def find_text_column(line, paragraph, added_list):
     if len(line.below_lines) == 0:
         return
     for l in line.below_lines:
         if l not in paragraph.line_collector.as_list():
             paragraph.line_collector.add_line(l)
-        find_text_column(l, paragraph)
+            added_list.append(l)
+        find_text_column(l, paragraph, added_list)
 
 
 def unify_duplicate(paragraphs):
@@ -291,3 +309,28 @@ def contour_paragraph(lines):
     cont = np.array(cont)
     cont = cont.reshape((-1, 1, 2))
     return cont
+
+
+# Clear non text element
+def find_non_text_element(p_collector, non_text_img):
+    height, width = non_text_img.shape
+    text_img = np.ones((height, width), np.uint8) * 255
+    for p in p_collector.as_list():
+        cv2.drawContours(text_img, [p.contour], 0, 0, -1)
+    text_img[text_img == 0] = 0
+    text_img[text_img == 255] = 1
+
+    non_text_img[non_text_img == 0] = 1
+    non_text_img[non_text_img == 255] = 0
+    result = np.multiply(text_img, non_text_img)
+    result[result == 0] = 255
+    result[result == 1] = 0
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (math.ceil(height * 0.009),
+                                                        math.ceil(width * 0.009)))
+    result = cv2.morphologyEx(np.bitwise_not(result), cv2.MORPH_CLOSE, kernel)
+    result = np.bitwise_not(result)
+
+    im2, contours, hierarchy = cv2.findContours(result, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(result, contours, -1, 0, 3)
+    return result

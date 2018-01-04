@@ -1,18 +1,21 @@
 __author__ = 'Simone Biffi'
 
 from datetime import datetime
+import os
 from helper import component, image
 from MHS import cc_analysis
 from MHS.classes.region import Region
 from MHS.classes.region_collector import RegionCollector
 import manager.filter as component_filter
-from manager.post_processing import text_segmentation, post_processing, find_paragraph, refine_paragraph
-from result_statistics.manager import text_statistics
+from manager.post_processing import text_segmentation, post_processing, find_paragraph, refine_paragraph, find_non_text_element
+from result_statistics.manager import text_statistics, non_text_statistics
 
 
 def run(img_path, filename):
     xml_path = img_path.replace(filename, 'pc-' + filename.replace('.jpg', '.xml'))
-    out_path = './result/' + filename
+    out_path = './result/' + filename.replace('.jpg', '') + "/"
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
 
     region_collector = RegionCollector()
     img, gray = image.load_and_gray(img_path)
@@ -31,7 +34,8 @@ def run(img_path, filename):
     region_collector.region_tree.get_node(region_collector.region_tree.root).data.included.manually_clear_cache()
     region_collector.region_tree.get_node(region_collector.region_tree.root).data.manually_clear_cache()
 
-    post_processing(region_collector.region_tree.get_node(region_collector.region_tree.root).data, binary)
+    non_text_img = post_processing(region_collector.region_tree.get_node(region_collector.region_tree.root).data,
+                                   binary)
 
     region_collector.region_tree.get_node(region_collector.region_tree.root).data.included.manually_clear_cache()
     region_collector.region_tree.get_node(region_collector.region_tree.root).data.manually_clear_cache()
@@ -43,7 +47,12 @@ def run(img_path, filename):
 
     p_collector = find_paragraph(t_lines)
     p_collector = refine_paragraph(p_collector)
-    return text_statistics(img, p_collector, xml_path, out_path)
+
+    nte_img = find_non_text_element(p_collector, non_text_img)
+
+    return text_statistics(img, p_collector, xml_path, out_path + "t") + non_text_statistics(img, xml_path,
+                                                                                      out_path + "nt", nte_img)
+
     # DRAW LINE, PARAGRAPH, TEXT COMPONENT, NON TEXT COMPONENT
     # img_line = copy.deepcopy(img)
     # for p in p_collector.as_list():

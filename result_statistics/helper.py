@@ -3,12 +3,17 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 
-def accuracy(img, paragraph, ground_truth, out_path):
+def accuracy(img, ground_truth, out_path, non_text_img=None, paragraph=None):
     height, width, _ = img.shape
     p_image = np.zeros((height, width))
     gt_image = np.zeros((height, width))
-    for p in paragraph.as_list():
-        cv2.drawContours(p_image,[p.contour], 0, (147, 0, 255), -1)
+    if paragraph is None and non_text_img is not None:
+        p_image = non_text_img
+        p_image[p_image == 0] = 147
+        p_image[p_image == 255] = 0
+    else:
+        for p in paragraph.as_list():
+            cv2.drawContours(p_image, [p.contour], 0, 147, -1)
     cv2.imwrite(out_path + '_p_filled.png', p_image)
 
     for c in ground_truth:
@@ -26,8 +31,8 @@ def accuracy(img, paragraph, ground_truth, out_path):
     not_found = np.multiply(not_found, gt_image)
 
     cv2.imwrite(out_path + '_not_found.png', not_found)
-    recall = np.count_nonzero(intersection) / np.count_nonzero(gt_image)
-    precision = np.count_nonzero(intersection) / np.count_nonzero(p_image)
+    recall = np.count_nonzero(intersection) / np.count_nonzero(gt_image) if np.count_nonzero(gt_image) > 0 else 0
+    precision = np.count_nonzero(intersection) / np.count_nonzero(p_image) if np.count_nonzero(p_image) > 0 else 0
     return recall, precision
 
 
